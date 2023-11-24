@@ -20,10 +20,9 @@ public:
 
 	bool isRunning() { return getNumWindows() > 0; }
 
-	void setObservables(const Map* map, const std::vector<EntityPtr>* entities, const std::vector<Device*>* devs) {
+	void setObservables(const Map* map, const std::vector<EntityPtr>* entities) {
 		_map = map;
 		_entities = entities;
-		_devices = devs;
 	}
 
 	void setup() override;
@@ -35,7 +34,6 @@ private:
 
 	const Map* _map = nullptr;
 	const std::vector<EntityPtr>* _entities = nullptr;
-	const std::vector<Device*>* _devices = nullptr;
 
 	ci::Font _font;
 

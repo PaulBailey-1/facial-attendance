@@ -75,6 +75,7 @@ void DBConnection::createTables() {
         CONSTRAINT FK_student FOREIGN KEY (student_id) REFERENCES students(id)\
     )", r);
     query("CREATE TABLE IF NOT EXISTS attendance (\
+        day DATE DEFAULT CURRENT_DATE, \
         room_id INT, \
         period INT, \
         student_id INT, \
@@ -88,6 +89,7 @@ void DBConnection::createTables() {
         device_id INT, \
         facial_features BLOB({}), \
         time TIMESTAMP DEFAULT CURRENT_TIMESTAMP, \
+        period INT, \
         short_term_state_id INT, \
         CONSTRAINT FK_sts FOREIGN KEY (short_term_state_id) REFERENCES short_term_states(id)\
     )", face_bytes).c_str(), r);
@@ -182,6 +184,55 @@ void DBConnection::updateUpdate(UpdatePtr update) {
     }
 }
 
+void DBConnection::removePreviousUpdates(UpdatePtr update) {
+    try {
+        boost::mysql::results result;
+        _conn.execute(_conn.prepare_statement(
+            "DELETE FROM updates WHERE short_term_state_id=? AND period IS NULL"
+        ).bind(update->shortTermStateId), result);
+    }
+    catch (const boost::mysql::error_with_diagnostics& err) {
+        std::cerr << "Error: " << err.what() << '\n'
+            << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
+    }
+}
+
+void DBConnection::setUpdatesPeriod(int period) {
+    try {
+        boost::mysql::results result;
+        _conn.execute(_conn.prepare_statement(
+            "UPDATE updates SET period=? WHERE period IS NULL"
+        ).bind(period), result);
+    }
+    catch (const boost::mysql::error_with_diagnostics& err) {
+        std::cerr << "Error: " << err.what() << '\n'
+            << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
+    }
+}
+
+void DBConnection::getUpdatesPath(int stsId, std::vector<int>& devPath) {
+    try {
+        boost::mysql::results result;
+        _conn.execute(_conn.prepare_statement(
+            "SELECT device_id FROM updates WHERE short_term_state_id=? ORDER BY period"
+        ).bind(stsId), result);
+        for (const boost::mysql::row_view& row : result.rows()) {
+            devPath.push_back(row[0].as_int64());
+        }
+    }
+    catch (const boost::mysql::error_with_diagnostics& err) {
+        std::cerr << "Error: " << err.what() << '\n'
+            << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
+    }
+}
+
+void DBConnection::clearUpdates() {
+    printf("Clearing updates ... ");
+    boost::mysql::results result;
+    query("DELETE FROM updates", result);
+    printf("Done\n");
+}
+
 LongTermStatePtr DBConnection::getLongTermState(int id) {
     try {
         printf("Fetching long term state ... ");
@@ -218,13 +269,45 @@ void DBConnection::getLongTermStates(std::vector<EntityStatePtr> &states) {
     printf("Done\n");
 }
 
-void DBConnection::createLongTermState(ShortTermStatePtr sts) {
+int DBConnection::createLongTermState(ShortTermStatePtr sts) {
     try {
         printf("Creating long term state ... ");
         boost::mysql::results result;
         _conn.execute(_conn.prepare_statement(
             "INSERT INTO long_term_states (mean_facial_features) VALUES(?)"
         ).bind(sts->getFacialFeatures()), result);
+        query("SELECT LAST_INSERT_ID()", result);
+        printf("Done\n");
+        return result.rows()[0][0].as_uint64();
+    }
+    catch (const boost::mysql::error_with_diagnostics& err) {
+        std::cerr << "Error: " << err.what() << '\n'
+            << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
+    }
+}
+
+void DBConnection::updateLongTermState(LongTermStatePtr lts) {
+    try {
+        fmt::print("Updating long term state {} ... ", lts->id);
+        boost::mysql::results result;
+        _conn.execute(_conn.prepare_statement(
+            "UPDATE long_term_states SET mean_facial_features=?, student_id=? WHERE id=?"
+        ).bind(lts->getFacialFeatures(), lts->studentId, lts->id), result);
+        printf("Done\n");
+    }
+    catch (const boost::mysql::error_with_diagnostics& err) {
+        std::cerr << "Error: " << err.what() << '\n'
+            << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
+    }
+}
+
+void DBConnection::setLongTermStateStudent(LongTermStatePtr lts) {
+    try {
+        fmt::print("Setting {} lts to student {} ... ", lts->id, lts->studentId);
+        boost::mysql::results result;
+        _conn.execute(_conn.prepare_statement(
+            "UPDATE long_term_states SET student_id=? WHERE id=?"
+        ).bind(lts->studentId, lts->id), result);
         printf("Done\n");
     }
     catch (const boost::mysql::error_with_diagnostics& err) {
@@ -300,4 +383,71 @@ void DBConnection::clearShortTermStates() {
     query("DELETE FROM short_term_states", result);
     printf("Done\n");
 
+}
+
+int DBConnection::getScheduledRoom(int studentId, int period) {
+    try {
+        fmt::print("Gettting room for student {} in period {} ... ", studentId, period);
+        boost::mysql::results result;
+        _conn.execute(_conn.prepare_statement(
+            "SELECT room_id FROM schedules WHERE student_id=? AND period=?"
+        ).bind(studentId, period), result);
+        printf("Done\n");
+        return result.rows()[0][0].as_int64();
+    }
+    catch (const boost::mysql::error_with_diagnostics& err) {
+        std::cerr << "Error: " << err.what() << '\n'
+            << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
+    }
+    return -1;
+}
+
+void DBConnection::getSchedules(std::vector<Schedule>& schedules) {
+    try {
+        printf("Getting schedules ... ");
+        boost::mysql::results result;
+        query("SELECT student_id, room_id FROM schedules ORDER BY student_id, period", result);
+        std::vector<int> rooms;
+        int student = -1;
+        for (const boost::mysql::row_view& row : result.rows()) {
+            if (student != row[0].as_int64() && student != -1) {
+                schedules.push_back(Schedule{student, rooms});
+                rooms.clear();
+            }
+            student = row[0].as_int64();
+            rooms.push_back(row[1].as_int64());
+        }
+        schedules.push_back(Schedule{ student, rooms });
+        printf("Done\n");
+    }
+    catch (const boost::mysql::error_with_diagnostics& err) {
+        std::cerr << "Error: " << err.what() << '\n'
+            << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
+    }
+}
+
+
+void DBConnection::setAttendance(int room, int period, int studentId, AttendanceStatus status) {
+    try {
+        std::string statusS = status == AttendanceStatus::ABSENT ? "ABSENT" : "PRESENT";
+        fmt::print("Setting attendance for student {} in period {} to {} ... ", studentId, period, statusS);
+        boost::mysql::results result;
+        _conn.execute(_conn.prepare_statement(
+            "INSERT INTO attendance (room_id, period, student_id, status) VALUES (?,?,?,?)"
+        ).bind(room, period, studentId, statusS), result);
+        printf("Done\n");
+    }
+    catch (const boost::mysql::error_with_diagnostics& err) {
+        std::cerr << "Error: " << err.what() << '\n'
+            << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
+    }
+}
+
+int DBConnection::getPeriod() {
+    boost::mysql::results result;
+    query("SELECT period FROM updates WHERE period IS NOT NULL ORDER BY time DESC LIMIT 1", result);
+    if (result.rows().size() > 0) {
+        return result.rows()[0][0].as_int64();
+    }
+    return -1;
 }

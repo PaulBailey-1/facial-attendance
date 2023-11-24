@@ -34,7 +34,7 @@ void Display::draw() {
 
 	ci::gl::clear(grey);
 
-	if (_map == nullptr || _entities == nullptr || _devices == nullptr) {
+	if (_map == nullptr || _entities == nullptr) {
 		return;
 	}
 
@@ -56,8 +56,8 @@ void Display::draw() {
 	}
 
 	ci::gl::color(ci::ColorA(170/255.0, 70/255.0, 190/255.0, 0.5));
-	for (const Device* dev : *_devices) {
-		ci::gl::drawSolid(dev->getView());
+	for (const DeviceView devView : _map->devs) {
+		ci::gl::drawSolid(devView.view);
 	}
 
 	ci::gl::color(ci::Color(90/255.0, 65/255.0, 55/255.0));
@@ -74,7 +74,7 @@ void Display::draw() {
 	ci::TextBox tboxBase = ci::TextBox().alignment(ci::TextBox::CENTER).font(_font).size(glm::ivec2(50, 15));
 
 	if (_entities->size() > 0) {
-		const iGrid &pathMap = _entities->at(0)->getPathMap();
+		const iGrid& pathMap = *(_map->getPathMap((*_entities)[0]->getNextDoor(1)));
 		for (int x = 0; x < pathMap.size(); x+=4) {
 			for (int y = 0; y < pathMap[x].size(); y+=4) {
 				ci::gl::Texture2dRef textTexture = ci::gl::Texture2d::create(tboxBase.text(std::to_string(pathMap[x][y])).render());

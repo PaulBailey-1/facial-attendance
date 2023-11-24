@@ -20,17 +20,30 @@ public:
     
     void createTables();
     void getEntities(std::vector<EntityPtr>& vec);
+
     void pushUpdate(int devId, const boost::span<UCHAR> facialFeatures);
     void getNewUpdates(std::vector<UpdatePtr>& updates);
     void updateUpdate(UpdatePtr update);
+    void removePreviousUpdates(UpdatePtr update);
+    void setUpdatesPeriod(int period);
+    void getUpdatesPath(int stsId, std::vector<int>& devPath);
+    void clearUpdates();
+
     LongTermStatePtr getLongTermState(int id);
     void getLongTermStates(std::vector<EntityStatePtr>& states);
-    void createLongTermState(ShortTermStatePtr sts);
+    int createLongTermState(ShortTermStatePtr sts);
+    void updateLongTermState(LongTermStatePtr lts);
+    void setLongTermStateStudent(LongTermStatePtr lts);
+
     void getShortTermStates(std::vector<EntityStatePtr>& states);
     int createShortTermState(UpdateCPtr update, LongTermStatePtr ltState = nullptr);
     void updateShortTermState(ShortTermStatePtr state);
     void clearShortTermStates();
-    //void setAttendance();
+
+    int getScheduledRoom(int studentId, int period);
+    void getSchedules(std::vector<Schedule>& schedules);
+    void setAttendance(int room, int period, int studentId, AttendanceStatus status);
+    int getPeriod();
 
 private:
 

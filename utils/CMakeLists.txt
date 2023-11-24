@@ -2,11 +2,12 @@ cmake_minimum_required(VERSION 3.18)
 
 project(Facial-Attendence-Utils)
 
-set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDebug)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 set(SRCS
     src/DBConnection.cpp
     src/Entity.cpp
+    src/Map.cpp
 )
 
 find_package(Boost REQUIRED )

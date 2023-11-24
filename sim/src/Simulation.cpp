@@ -13,23 +13,18 @@ Simulation::Simulation() {
 	printf("Loading map ... ");
 
 	_map = Map("../../../../map.xml");
+	_map.generatePathMaps();
 
 	printf("Done\nCreating devices ... ");
 
-	for (DeviceLoc devLoc : _map.devs) {
-		_devices.push_back(new Device(devLoc));
-	}
-
-	printf("Done\nGenerating pathmaps ... ");
-
-	for (EntityPtr entity : _entities) {
-		entity->generatePathMaps(_map);
+	for (DeviceView devView : _map.devs) {
+		_devices.push_back(new Device(devView));
 	}
 
 	printf("Done\n");
 
 	_display = Display::start();
-	_display->setObservables(&_map, &_entities, &_devices);
+	_display->setObservables(&_map, &_entities);
 }
 
 void Simulation::run() {
@@ -37,8 +32,11 @@ void Simulation::run() {
 
 	printf("Running simulation...\n");
 
+	int period = 1;
+
 	for (EntityPtr entity : _entities) {
-		entity->loadPathMap(1);
+		entity->setPathMap(_map.getPathMap(entity->getNextDoor(period)));
+		entity->setStartPos(_map.doors[0].pos);
 	}
 
 	while (1) {
@@ -47,6 +45,19 @@ void Simulation::run() {
 		}
 		for (Device* dev : _devices) {
 			dev->run(_entities);
+		}
+		if (_db.getPeriod() == period) {
+			if (period == 3) {
+				period = 1;
+			} else {
+				period++;
+			}
+			for (EntityPtr entity : _entities) {
+				entity->setPathMap(_map.getPathMap(entity->getNextDoor(period)));
+				if (period == 1) {
+					entity->setStartPos(_map.doors[0].pos);
+				}
+			}
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}

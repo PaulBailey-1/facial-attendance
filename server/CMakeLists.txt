@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.18)
 
 project(Facial-Attendence-Server)
 
-#set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 set(UTILS_LIB_IN ${CMAKE_CURRENT_SOURCE_DIR}/../utils/lib)
 cmake_path(NORMAL_PATH UTILS_LIB_IN OUTPUT_VARIABLE UTILS_LIB)

@@ -29,32 +29,28 @@ public:
 	}
 };
 
-typedef std::vector<std::vector<int>> iGrid;
-
 class Entity : public EntityState {
 public:
 
-	Entity::Entity(int id, boost::span<const UCHAR> facialFeatures, std::vector<int> schedule) : EntityState(id, facialFeatures) {
+	Entity() : EntityState(0, boost::span<const UCHAR>()) {}
+
+	Entity(int id, boost::span<const UCHAR> facialFeatures, std::vector<int> schedule) : EntityState(id, facialFeatures) {
 		_schedule = schedule;
 	}
 
-	void generatePathMaps(const Map& map);
-	void loadPathMap(int period);
 	void step(float dt);
 
-	const iGrid& getPathMap() const { return _pathMaps[_period - 1]; }
+	int getNextDoor(int period) const { return _schedule[period - 1]; }
 	const glm::vec2& getPos() const { return _pos; }
+
+	void setPathMap(const iGrid* pathMap) { _pathMap = pathMap; }
+	void setStartPos(glm::vec2 pos) { _pos = pos; }
 
 private:
 
-	int _period = 1;
-
 	std::vector<int> _schedule;
-	std::vector<glm::ivec2> _startPositions;
-	std::vector<iGrid> _pathMaps;
 	glm::vec2 _pos = {0,0};
-
-	void createPathMap(const Map& map, iGrid& pathMap, glm::ivec2 start);
+	const iGrid* _pathMap = nullptr;
 
 };
 
@@ -63,10 +59,12 @@ public:
 
 	int deviceId;
 	int shortTermStateId;
+	int period;
 
 	Update(int id_, int device_id_, boost::span<const UCHAR> facialFeatures_) : EntityState(id_, facialFeatures_) {
 		deviceId = device_id_;
 		shortTermStateId = -1;
+		period = -1;
 	}
 };
 
@@ -81,6 +79,9 @@ public:
 	}
 
 	LongTermState(int id_, boost::span<const UCHAR> facialFeatures_) : LongTermState(id_, facialFeatures_, -1) {}
+
+	LongTermState(int id_) : LongTermState(id_, boost::span<const UCHAR>(), -1) {}
+
 };
 
 class ShortTermState : public EntityState {
@@ -110,4 +111,9 @@ typedef std::shared_ptr<const LongTermState> LongTermStateCPtr;
 enum AttendanceStatus {
 	PRESENT,
 	ABSENT
+};
+
+struct Schedule {
+	int studentId;
+	std::vector<int> rooms;
 };

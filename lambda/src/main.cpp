@@ -92,6 +92,7 @@ void processUpdate(UpdatePtr update) {
         update->shortTermStateId = db.createShortTermState(update);
     }
 
+    db.removePreviousUpdates(update);
     db.updateUpdate(update);
 }
 
