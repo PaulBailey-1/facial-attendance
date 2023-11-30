@@ -37,5 +37,6 @@ void Entity::step(float dt) {
 
     glm::vec2 dir = glm::normalize(glm::vec2(glm::ivec2(ipos.x + li, ipos.y + lj) - ipos));
     _pos += dir * dt;
+    _heading = atan2f(dir.y, dir.x);
 
 }

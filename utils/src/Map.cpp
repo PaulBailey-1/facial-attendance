@@ -5,7 +5,7 @@ DeviceView::DeviceView(int id_, glm::vec2 pos_, float angle_) {
 
     id = id_;
     pos = pos_;
-    angle = angle_;
+    angle = angle_ * (M_PI / 180);
 
     view.moveTo({ 0, 0 });
     view.lineTo({ CAM_RANGE, 0 });
@@ -13,7 +13,7 @@ DeviceView::DeviceView(int id_, glm::vec2 pos_, float angle_) {
     view.close();
     glm::mat3 trans(1.0);
     trans = glm::translate(trans, pos);
-    trans = glm::rotate(trans, float(-CAM_ANGLE / 2 - angle * (M_PI / 180)));
+    trans = glm::rotate(trans, float(-CAM_ANGLE / 2 - angle));
     view.transform(trans);
 
 }

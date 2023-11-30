@@ -1,35 +1,68 @@
 <?xml version="1.0"?>
-<map width="100" height="60">
+<map width="180" height="60">
 
-    <inBound x="0" y="0" width="100" height="60"></inBound>
-    <outBound x="10" y="10" width="80" height="40"></outBound>
+    <inBound x="0" y="0" width="180" height="60"></inBound>
+    <outBound x="10" y="10" width="40" height="40"></outBound>
+    <outBound x="70" y="10" width="40" height="40"></outBound>
+    <outBound x="130" y="10" width="40" height="40"></outBound>
 
-    <device id="0" x="50" y="5" direction="180"></device>
-    <device id="1" x="50" y="5" direction="0"></device>
-    <device id="2" x="95" y="30" direction="90"></device>
-    <device id="3" x="95" y="30" direction="-90"></device>
-    <device id="4" x="50" y="55" direction="0"></device>
-    <device id="5" x="50" y="55" direction="180"></device>
-    <device id="6" x="5" y="30" direction="-90"></device>
-    <device id="7" x="5" y="30" direction="90"></device>
+    <device id="0" x="30" y="5" direction="180"></device>
+    <device id="1" x="30" y="5" direction="0"></device>
 
-    <door id="0" x="20" y="0" angle="0"></door>
-    <door id="1" x="40" y="0" angle="0"></door>
-    <door id="2" x="60" y="0" angle="0"></door>
-    <door id="3" x="80" y="0" angle="0"></door>
+    <device id="2" x="90" y="5" direction="180"></device>
+    <device id="3" x="90" y="5" direction="0"></device>
 
-    <door id="4" x="100" y="20" angle="90"></door>
-    <door id="5" x="100" y="40" angle="90"></door>
+    <device id="4" x="150" y="5" direction="180"></device>
+    <device id="5" x="150" y="5" direction="0"></device>
 
-    <door id="6" x="80" y="60" angle="0"></door>
-    <door id="7" x="60" y="60" angle="0"></door>
-    <door id="8" x="40" y="60" angle="0"></door>
-    <door id="9" x="20" y="60" angle="0"></door>
+    <device id="6" x="150" y="55" direction="0"></device>
+    <device id="7" x="150" y="55" direction="180"></device>
 
-    <door id="10" x="0" y="40" angle="90"></door>
-    <door id="11" x="0" y="20" angle="90"></door>
+    <device id="8" x="90" y="55" direction="0"></device>
+    <device id="9" x="90" y="55" direction="180"></device>
 
-    <door id="12" x="10" y="30" angle="90"></door>
-    <door id="13" x="90" y="30" angle="90"></door>
+    <device id="10" x="30" y="55" direction="0"></device>
+    <device id="11" x="30" y="55" direction="180"></device>
+
+    <door id="0" x="60" y="0" angle="0"></door>
+    <door id="1" x="120" y="0" angle="0"></door>
+    <door id="2" x="145" y="0" angle="0"></door>
+    <door id="3" x="175" y="0" angle="0"></door>
+
+    <door id="4" x="180" y="5" angle="90"></door>
+    <door id="5" x="180" y="20" angle="90"></door>
+    <door id="6" x="180" y="40" angle="90"></door>
+    <door id="7" x="180" y="55" angle="90"></door>
+
+    <door id="8" x="175" y="60" angle="0"></door>
+    <door id="9" x="145" y="60" angle="0"></door>
+    <door id="10" x="120" y="60" angle="0"></door>
+    <door id="11" x="60" y="60" angle="0"></door>
+    <door id="12" x="35" y="60" angle="0"></door>
+    <door id="13" x="25" y="60" angle="0"></door>
+    <door id="14" x="5" y="60" angle="0"></door>
+
+    <door id="15" x="0" y="55" angle="90"></door>
+    <door id="16" x="0" y="40" angle="90"></door>
+    <door id="17" x="0" y="20" angle="90"></door>
+    <door id="18" x="0" y="5" angle="90"></door>
+
+    <door id="19" x="5" y="0" angle="0"></door>
+    <door id="20" x="25" y="0" angle="0"></door>
+
+    <door id="21" x="25" y="10" angle="0"></door>
+    <door id="22" x="25" y="50" angle="0"></door>
+    <door id="23" x="35" y="10" angle="0"></door>
+    <door id="24" x="35" y="50" angle="0"></door>
+
+    <door id="25" x="75" y="10" angle="0"></door>
+    <door id="26" x="75" y="50" angle="0"></door>
+    <door id="26" x="105" y="10" angle="0"></door>
+    <door id="26" x="105" y="50" angle="0"></door>
+
+    <door id="27" x="145" y="10" angle="0"></door>
+    <door id="28" x="145" y="50" angle="0"></door>
+    <door id="29" x="155" y="10" angle="0"></door>
+    <door id="30" x="155" y="50" angle="0"></door>
 
 </map>

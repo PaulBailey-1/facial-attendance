@@ -42,6 +42,7 @@ public:
 
 	int getNextDoor(int period) const { return _schedule[period - 1]; }
 	const glm::vec2& getPos() const { return _pos; }
+	float getHeading() const { return _heading; }
 
 	void setPathMap(const iGrid* pathMap) { _pathMap = pathMap; }
 	void setStartPos(glm::vec2 pos) { _pos = pos; }
@@ -50,6 +51,7 @@ private:
 
 	std::vector<int> _schedule;
 	glm::vec2 _pos = {0,0};
+	float _heading = 0.0;
 	const iGrid* _pathMap = nullptr;
 
 };
