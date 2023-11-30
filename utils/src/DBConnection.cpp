@@ -10,7 +10,7 @@
 
 #include <fmt/core.h>
 
-#include "DBConnection.h"
+#include "utils/DBConnection.h"
 
 DBConnection::DBConnection() : _ssl_ctx(boost::asio::ssl::context::tls_client), _conn(_ctx, _ssl_ctx) {}
 

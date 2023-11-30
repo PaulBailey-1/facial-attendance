@@ -1,5 +1,5 @@
 
-#include "EntityState.h"
+#include "utils/EntityState.h"
 
 void Entity::step(float dt) {
 

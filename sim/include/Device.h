@@ -5,10 +5,9 @@
 
 #include <glm/glm.hpp>
 
-#include "EntityState.h"
-#include "DBConnection.h"
-
-#include "Map.h"
+#include <utils/EntityState.h>
+#include <utils/DBConnection.h>
+#include <utils/Map.h>
 
 class Device : public DeviceView {
     

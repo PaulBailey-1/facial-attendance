@@ -2,11 +2,12 @@
 
 #include <vector>
 
-#include "Map.h"
+#include <utils/Map.h>
+#include <utils/DBConnection.h>
+#include <utils/EntityState.h>
+
 #include "Device.h"
 #include "Display.h"
-#include "DBConnection.h"
-#include "EntityState.h"
 
 class Simulation {
 public:

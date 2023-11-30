@@ -5,8 +5,8 @@
 
 #include <fmt/core.h>
 
-#include "DBConnection.h"
-#include "EntityState.h"
+#include <utils/DBConnection.h>
+#include <utils/EntityState.h>
 
 DBConnection db;
 int period = 1;

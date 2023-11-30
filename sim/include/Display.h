@@ -3,12 +3,13 @@
 #include <vector>
 #include <thread>
 
-#include "cinder/app/App.h"
-#include "cinder/app/RendererGl.h"
-#include "cinder/gl/gl.h"
+#include <cinder/app/App.h>
+#include <cinder/app/RendererGl.h>
+#include <cinder/gl/gl.h>
 
-#include "Map.h"
-#include "EntityState.h"
+#include <utils/Map.h>
+#include <utils/EntityState.h>
+
 #include "Device.h"
 
 class Display : public ci::app::App {

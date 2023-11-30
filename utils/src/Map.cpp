@@ -1,5 +1,5 @@
 
-#include "Map.h"
+#include "utils/Map.h"
 
 DeviceView::DeviceView(int id_, glm::vec2 pos_, float angle_) {
 
