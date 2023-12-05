@@ -126,7 +126,7 @@ void processUpdate(UpdatePtr update) {
 int main() {
 
     db.connect();
-    //db.createTables();
+    db.createTables();
 
     std::vector<UpdatePtr> updates;
     printf("Checking for new updates... \n");

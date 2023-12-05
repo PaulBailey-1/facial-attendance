@@ -12,7 +12,7 @@ set(SRCS
 
 find_package(Boost REQUIRED )
 find_package(OpenSSL REQUIRED)
-find_package(fmt CONFIG REQUIRED)
+find_package(fmt REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 
 set(CINDER_DIR "C:/tools/Cinder")
@@ -30,7 +30,7 @@ set(UTIL_LINK_DIRS
 
 add_library(utils ${SRCS})
 target_link_directories(utils PUBLIC ${UTIL_LINK_DIRS})
-target_link_libraries( utils PUBLIC OpenSSL::SSL fmt::fmt cinder Eigen3::Eigen)
+target_link_libraries( utils PUBLIC OpenSSL::SSL fmt::fmt-header-only cinder Eigen3::Eigen)
 target_compile_features( utils PUBLIC cxx_std_17)
 target_include_directories(utils PUBLIC ${UTIL_INCLUDES})
 target_compile_definitions(utils PUBLIC -D_WIN32_WINNT=0x0601)

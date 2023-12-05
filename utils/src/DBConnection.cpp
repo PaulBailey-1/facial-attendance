@@ -84,7 +84,7 @@ void DBConnection::createTables() {
     )", r);
 
     const int face_bytes = FACE_VEC_SIZE * 4;
-    const int face_cov_bytes = FACE_VEC_SIZE * FACE_VEC_SIZE * 4
+    const int face_cov_bytes = FACE_VEC_SIZE * FACE_VEC_SIZE * 4;
     query(fmt::format("CREATE TABLE IF NOT EXISTS updates (\
         id INT AUTO_INCREMENT PRIMARY KEY, \
         device_id INT, \
@@ -94,7 +94,6 @@ void DBConnection::createTables() {
         short_term_state_id INT, \
         CONSTRAINT FK_sts FOREIGN KEY (short_term_state_id) REFERENCES short_term_states(id)\
     )", face_bytes).c_str(), r);
-    // needs to include face vec variances
     // needs expected dts between devs for periods
     query(fmt::format("CREATE TABLE IF NOT EXISTS long_term_states (\
         id INT AUTO_INCREMENT PRIMARY KEY, \
@@ -241,14 +240,14 @@ LongTermStatePtr DBConnection::getLongTermState(int id) {
         printf("Fetching long term state ... ");
         boost::mysql::results result;
         _conn.execute(_conn.prepare_statement(
-            "SELECT id, mean_facial_features, student_id FROM long_term_states WHERE id=?"
+            "SELECT id, mean_facial_features, cov_facial_features, student_id FROM long_term_states WHERE id=?"
         ).bind(id), result);
         printf("Done\n");
         auto row = result.rows()[0];
         if (row[2].is_int64()) {
-            return LongTermStatePtr(new LongTermState(row[0].as_int64(), row[1].as_blob(), row[2].as_int64()));
+            return LongTermStatePtr(new LongTermState(row[0].as_int64(), row[1].as_blob(), row[2].as_blob(), row[3].as_int64()));
         }
-        return LongTermStatePtr(new LongTermState(row[0].as_int64(), row[1].as_blob()));
+        return LongTermStatePtr(new LongTermState(row[0].as_int64(), row[1].as_blob(), row[2].as_blob()));
     }
     catch (const boost::mysql::error_with_diagnostics& err) {
         std::cerr << "Error: " << err.what() << '\n'
