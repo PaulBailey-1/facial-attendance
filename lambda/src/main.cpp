@@ -5,21 +5,44 @@
 #include <algorithm>
 
 #include <fmt/core.h>
+#include <Eigen/dense>
 
 #include <utils/DBConnection.h>
 #include <utils/EntityState.h>
 
+#define MATCHING_THRESH 0.1
+
 DBConnection db;
 
-EntityStatePtr facialMatch(EntityStatePtr update, const std::vector<EntityStatePtr>& pool) {
+// TODO: initilize
+FFMat R;
+
+EntityStatePtr facialMatch(EntityStatePtr update, const std::vector<EntityStatePtr>& pool, FFMat* R = nullptr) {
+
+    std::shared_ptr<FFMat> updateCov;
+    if (R != nullptr) {
+        updateCov = std::shared_ptr<FFMat>(R);
+    } else {
+        updateCov = std::shared_ptr<FFMat>(&update->facialFeaturesCov);
+    }
+
     for (const EntityStatePtr &cmp : pool) {
-        float l2norm = 0.0;
-        for (int j = 0; j < FACE_VEC_SIZE; j++) {
-            l2norm += pow(update->facialFeatures[j] - cmp->facialFeatures[j], 2);
-        }
-        l2norm /= FACE_VEC_SIZE;
-        // TODO: this should be using the variance
-        if (l2norm < 0.01) {
+        float distance = 0.0;
+
+        // L2Norm
+        //for (int j = 0; j < FACE_VEC_SIZE; j++) {
+        //    distance += pow(update->facialFeatures[j] - cmp->facialFeatures[j], 2);
+        //}
+        //distance /= FACE_VEC_SIZE;
+        
+        // Bhattacharyya distance
+        std::unique_ptr<FFVec> diff = std::unique_ptr<FFVec>(new FFVec());
+        std::unique_ptr<FFMat> sigma = std::unique_ptr<FFMat>(new FFMat());
+        *diff = update->facialFeatures - cmp->facialFeatures;
+        *sigma = (*updateCov + cmp->facialFeaturesCov) / 2;
+        distance = float(diff->transpose() * sigma->inverse() * *diff) / 8 + log(sigma->determinant() / sqrt(updateCov->determinant() * cmp->facialFeaturesCov.determinant())) / 2;
+
+        if (distance < MATCHING_THRESH) {
             return cmp;
         }
     }
@@ -29,6 +52,9 @@ EntityStatePtr facialMatch(EntityStatePtr update, const std::vector<EntityStateP
 void applyUpdate(ShortTermStatePtr state, UpdateCPtr update) {
     // TODO: optimally fuse facial features
     state->lastUpdateDeviceId = update->deviceId;
+
+
+
 }
 
 void processUpdate(UpdatePtr update) {
@@ -44,11 +70,12 @@ void processUpdate(UpdatePtr update) {
     std::vector<EntityStatePtr> longTermStates;
     db.getLongTermStates(longTermStates);
 
+    // TODO
     // match against who is probably there
     // match against who could be there
 
     // match against people seen
-    match = facialMatch(updateState, shortTermStates);
+    match = facialMatch(updateState, shortTermStates, &R);
 
     if (match != nullptr) {
 

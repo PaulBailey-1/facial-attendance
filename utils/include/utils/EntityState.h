@@ -1,25 +1,32 @@
 #pragma once
 
-#include <array>
 #include <memory>
 
 #include <boost/core/span.hpp>
+#include <Eigen/dense>
 
-#include "Map.h"
+#include "utils/Map.h"
 
 #define FACE_VEC_SIZE 128
 
 typedef unsigned char UCHAR;
+typedef Eigen::Matrix<float, FACE_VEC_SIZE, 1> FFVec;
+typedef Eigen::Matrix<float, FACE_VEC_SIZE, FACE_VEC_SIZE> FFMat;
 
 class EntityState {
 public:
 
 	int id;
-	std::array<float, FACE_VEC_SIZE> facialFeatures;
+	FFVec facialFeatures;
+	FFMat facialFeaturesCov;
 
 	EntityState(int id_, boost::span<const UCHAR> facialFeatures_) {
 		id = id_;
 		memcpy(facialFeatures.data(), facialFeatures_.data(), facialFeatures_.size_bytes());
+	}
+
+	EntityState(int id_, boost::span<const UCHAR> facialFeatures_, boost::span<const UCHAR> facialFeaturesCov_) : EntityState(id_, facialFeatures_) {
+		memcpy(facialFeaturesCov.data(), facialFeaturesCov_.data(), facialFeaturesCov_.size_bytes());
 	}
 
 	const boost::span<UCHAR> getFacialFeatures() const { return boost::span<UCHAR>(reinterpret_cast<UCHAR*>(const_cast<float*>(facialFeatures.data())), facialFeatures.size() * sizeof(float)); }
@@ -76,13 +83,13 @@ public:
 
 	int studentId;
 
-	LongTermState(int id_, boost::span<const UCHAR> facialFeatures_, int studentId_) : EntityState(id_, facialFeatures_) {
+	LongTermState(int id_, boost::span<const UCHAR> facialFeatures_, boost::span<const UCHAR> facialFeaturesCov_, int studentId_) : EntityState(id_, facialFeatures_, facialFeaturesCov_) {
 		studentId = studentId_;
 	}
 
-	LongTermState(int id_, boost::span<const UCHAR> facialFeatures_) : LongTermState(id_, facialFeatures_, -1) {}
+	LongTermState(int id_, boost::span<const UCHAR> facialFeatures_, boost::span<const UCHAR> facialFeaturesCov_) : LongTermState(id_, facialFeatures_, facialFeaturesCov_, -1) {}
 
-	LongTermState(int id_) : LongTermState(id_, boost::span<const UCHAR>(), -1) {}
+	LongTermState(int id_) : LongTermState(id_, boost::span<const UCHAR>(), boost::span<const UCHAR>(), -1) {}
 
 };
 
@@ -93,12 +100,12 @@ public:
 	int lastUpdateDeviceId;
 	int longTermStateKey;
 
-	ShortTermState(int id_, boost::span<const UCHAR> facialFeatures_, int lastUpdateDeviceId_, int longTermStateKey_) : EntityState(id_, facialFeatures_) {
+	ShortTermState(int id_, boost::span<const UCHAR> facialFeatures_, boost::span<const UCHAR> facialFeaturesCov_, int lastUpdateDeviceId_, int longTermStateKey_) : EntityState(id_, facialFeatures_, facialFeaturesCov_) {
 		lastUpdateDeviceId = lastUpdateDeviceId_;
 		longTermStateKey = longTermStateKey_;
 	}
 
-	ShortTermState(int id_, boost::span<const UCHAR> facialFeatures_, int lastUpdateDeviceId_) : ShortTermState(id_, facialFeatures_, lastUpdateDeviceId_, -1) {}
+	ShortTermState(int id_, boost::span<const UCHAR> facialFeatures_, boost::span<const UCHAR> facialFeaturesCov_, int lastUpdateDeviceId_) : ShortTermState(id_, facialFeatures_, facialFeaturesCov_, lastUpdateDeviceId_, -1) {}
 };
 
 typedef std::shared_ptr<EntityState> EntityStatePtr;
