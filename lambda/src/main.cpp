@@ -50,10 +50,20 @@ EntityStatePtr facialMatch(EntityStatePtr update, const std::vector<EntityStateP
 }
 
 void applyUpdate(ShortTermStatePtr state, UpdateCPtr update) {
-    // TODO: optimally fuse facial features
+
     state->lastUpdateDeviceId = update->deviceId;
 
+    //Kalman update
 
+    // z measurement vector is update->facialFeatures
+    // H is identity
+
+    static FFMat I = FFMat::Identity();
+    std::unique_ptr<FFMat> K = std::unique_ptr<FFMat>(new FFMat());
+    *K = state->facialFeaturesCov * (state->facialFeaturesCov + R).inverse();
+
+    state->facialFeatures += *K * (update->facialFeatures - state->facialFeatures);
+    state->facialFeaturesCov = (I - *K) * state->facialFeaturesCov;
 
 }
 
