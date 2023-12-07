@@ -3,6 +3,8 @@
 #include <vector>
 #include <memory>
 #include <algorithm>
+#include <string>
+#include <fstream>
 
 #include <fmt/core.h>
 #include <Eigen/dense>
@@ -133,10 +135,45 @@ void processUpdate(UpdatePtr update) {
     db.updateUpdate(update);
 }
 
+void loadUpdateCov(std::string filename) {
+    try {
+        std::ifstream file(filename);
+        int updateNum = 0;
+        int entity = 0;
+        if (file.is_open()) {
+            std::string line;
+            int row = 0;
+            while (1) {
+                std::getline(file, line);
+                if (file.eof()) break;
+                std::stringstream s(line);
+                std::string num;
+                int col = 0;
+                while (std::getline(s, num, ',')) {
+                    R(row, col) = stof(num);
+                    col++;
+                }
+                if (col != FACE_VEC_SIZE) {
+                    throw std::runtime_error("invalid column dimension\n");
+                }
+                row++;
+            }
+            if (row != FACE_VEC_SIZE) {
+                throw std::runtime_error("invalid row dimension\n");
+            }
+        }
+    }
+    catch (const std::exception& err) {
+        std::cerr << "Failed to read update covariance: " << err.what() << std::endl;
+    }
+}
+
 int main() {
 
     db.connect();
-    db.createTables();
+    //db.createTables();
+    
+    loadUpdateCov("../../../../updateCov.csv");
 
     std::vector<UpdatePtr> updates;
     printf("Checking for new updates... \n");

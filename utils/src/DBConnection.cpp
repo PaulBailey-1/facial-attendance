@@ -65,7 +65,8 @@ void DBConnection::createTables() {
     boost::mysql::results r;
 
     query("CREATE TABLE IF NOT EXISTS students (\
-        id INT AUTO_INCREMENT PRIMARY KEY, \
+        id INT, \
+        device_id INT, \
         facial_features BLOB(512) \
     )", r);
     query("CREATE TABLE IF NOT EXISTS schedules (\
@@ -85,15 +86,6 @@ void DBConnection::createTables() {
 
     const int face_bytes = FACE_VEC_SIZE * 4;
     const int face_cov_bytes = FACE_VEC_SIZE * FACE_VEC_SIZE * 4;
-    query(fmt::format("CREATE TABLE IF NOT EXISTS updates (\
-        id INT AUTO_INCREMENT PRIMARY KEY, \
-        device_id INT, \
-        facial_features BLOB({}), \
-        time TIMESTAMP DEFAULT CURRENT_TIMESTAMP, \
-        period INT, \
-        short_term_state_id INT, \
-        CONSTRAINT FK_sts FOREIGN KEY (short_term_state_id) REFERENCES short_term_states(id)\
-    )", face_bytes).c_str(), r);
     // needs expected dts between devs for periods
     query(fmt::format("CREATE TABLE IF NOT EXISTS long_term_states (\
         id INT AUTO_INCREMENT PRIMARY KEY, \
@@ -114,6 +106,15 @@ void DBConnection::createTables() {
         long_term_state_key INT, \
         CONSTRAINT FK_lts FOREIGN KEY (long_term_state_key) REFERENCES long_term_states(id) \
     )", face_bytes, face_cov_bytes).c_str(), r);
+    query(fmt::format("CREATE TABLE IF NOT EXISTS updates (\
+        id INT AUTO_INCREMENT PRIMARY KEY, \
+        device_id INT, \
+        facial_features BLOB({}), \
+        time TIMESTAMP DEFAULT CURRENT_TIMESTAMP, \
+        period INT, \
+        short_term_state_id INT, \
+        CONSTRAINT FK_sts FOREIGN KEY (short_term_state_id) REFERENCES short_term_states(id)\
+    )", face_bytes).c_str(), r);
 
     printf("Done\n");
 
@@ -453,4 +454,17 @@ int DBConnection::getPeriod() {
         return result.rows()[0][0].as_int64();
     }
     return -1;
+}
+
+void DBConnection::pushStudentData(UpdatePtr data, int studentId) {
+    try {
+        boost::mysql::results result;
+        _conn.execute(
+            _conn.prepare_statement("INSERT INTO students (id, device_id, facial_features) VALUES(?, ?, ?)")
+            .bind(studentId, data->deviceId, data->getFacialFeatures()), result);
+    }
+    catch (const boost::mysql::error_with_diagnostics& err) {
+        std::cerr << "Error: " << err.what() << '\n'
+            << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
+    }
 }

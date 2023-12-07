@@ -45,6 +45,8 @@ public:
     void setAttendance(int room, int period, int studentId, AttendanceStatus status);
     int getPeriod();
 
+    void pushStudentData(UpdatePtr data, int studentId);
+
 private:
 
     boost::asio::io_context _ctx;

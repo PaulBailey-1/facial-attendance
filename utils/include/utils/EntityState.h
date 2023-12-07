@@ -75,6 +75,8 @@ public:
 		shortTermStateId = -1;
 		period = -1;
 	}
+	
+	Update(int id_, int deviceId_) : Update(id_, deviceId_, boost::span<const UCHAR>()) {}
 };
 
 class LongTermState : public EntityState {
