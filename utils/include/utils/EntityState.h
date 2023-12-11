@@ -22,7 +22,7 @@ public:
 
 	EntityState(int id_, boost::span<const UCHAR> facialFeatures_) {
 		id = id_;
-		memcpy(facialFeatures.data(), facialFeatures_.data(), facialFeatures_.size_bytes());
+		setFacialFeatures(facialFeatures_);
 	}
 
 	EntityState(int id_, boost::span<const UCHAR> facialFeatures_, boost::span<const UCHAR> facialFeaturesCov_) : EntityState(id_, facialFeatures_) {
@@ -30,24 +30,34 @@ public:
 	}
 
 	const boost::span<UCHAR> getFacialFeatures() const { return boost::span<UCHAR>(reinterpret_cast<UCHAR*>(const_cast<float*>(facialFeatures.data())), facialFeatures.size() * sizeof(float)); }
+	void setFacialFeatures(boost::span<const UCHAR> facialFeatures_) {
+		memcpy(facialFeatures.data(), facialFeatures_.data(), facialFeatures_.size_bytes());
+	}
+	const boost::span<UCHAR> getFacialFeaturesCovSpan() const { return boost::span<UCHAR>(reinterpret_cast<UCHAR*>(const_cast<float*>(facialFeaturesCov.data())), facialFeaturesCov.size() * sizeof(float)); }
+	FFMat& getFacialFeaturesCov() { return facialFeaturesCov; }
 
 	friend bool operator < (const EntityState& a, const EntityState& b) {
 		return a.id < b.id;
 	}
+
 };
 
 class Entity : public EntityState {
 public:
 
+	std::vector<int> schedule;
+
 	Entity() : EntityState(0, boost::span<const UCHAR>()) {}
 
-	Entity(int id, boost::span<const UCHAR> facialFeatures, std::vector<int> schedule) : EntityState(id, facialFeatures) {
-		_schedule = schedule;
+	Entity(int id) : EntityState(id, boost::span<const UCHAR>()) {}
+
+	Entity(int id, std::vector<int> schedule_) : EntityState(id, boost::span<const UCHAR>()) {
+		schedule = schedule_;
 	}
 
 	void step(float dt);
 
-	int getNextDoor(int period) const { return _schedule[period - 1]; }
+	int getNextDoor(int period) const { return schedule[period - 1]; }
 	const glm::vec2& getPos() const { return _pos; }
 	float getHeading() const { return _heading; }
 
@@ -56,7 +66,6 @@ public:
 
 private:
 
-	std::vector<int> _schedule;
 	glm::vec2 _pos = {0,0};
 	float _heading = 0.0;
 	const iGrid* _pathMap = nullptr;
@@ -65,6 +74,8 @@ private:
 
 class Update : public EntityState {
 public:
+
+	inline static FFMat* defaultCov = nullptr;
 
 	int deviceId;
 	int shortTermStateId;
@@ -77,6 +88,9 @@ public:
 	}
 	
 	Update(int id_, int deviceId_) : Update(id_, deviceId_, boost::span<const UCHAR>()) {}
+
+	FFMat& getFacialFeaturesCov() { return *defaultCov; }
+
 };
 
 class LongTermState : public EntityState {

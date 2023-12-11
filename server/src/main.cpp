@@ -30,16 +30,17 @@ int matchStudent(int stsId) {
 
     for (int per = 0; per < devPath.size(); per++) {
         std::set<int> doors = devDoorsMatches[devPath[per]];
-        for (auto i = possible.begin(); i != possible.end(); i++) {
+        for (std::vector<Schedule>::iterator i = possible.begin(); i != possible.end();) {
             if (doors.find(i->rooms[per]) == doors.end()) {
-                possible.erase(i);
-                i--;
+                i = possible.erase(i);
+            } else {
+                i++;
             }
         }
     }
 
     if (possible.size() > 1) {
-        fmt::print("Error: failed to match student for sts: {}, matched to students \n");
+        fmt::print("Error: failed to match student for sts: {}, matched to students \n", stsId);
         for (Schedule& sch : possible) {
             fmt::print("{}, ", sch.studentId);
         }
@@ -88,7 +89,7 @@ void nextPeriod() {
 
 void nextDay() {
 
-    printf("Running next day\n");
+    printf("\nRunning next day\n");
 
     std::vector<EntityStatePtr> shortTermStates;
     db.getShortTermStates(shortTermStates);
@@ -119,56 +120,10 @@ void nextDay() {
     db.clearShortTermStates();
 }
 
-void uploadDataSet(std::string filename, int entities, int imgs) {
-    fmt::print("Uploading dataset to db from {} ... ", filename);
-    try {
-        std::ifstream file(filename);
-        int updateNum = 0;
-        int entity = 0;
-        if (file.is_open()) {
-            std::string line;
-            while (1) {
-                std::getline(file, line);
-                if (file.eof()) break;
-                std::stringstream s(line);
-                std::string num;
-                UpdatePtr data = UpdatePtr(new Update(0, updateNum));
-                updateNum++;
-                if (updateNum == imgs) {
-                    updateNum = 0;
-                    entity++;
-                }
-                int feature = 0;
-                while (std::getline(s, num, ',')) {
-                    data->facialFeatures[feature] = stof(num);
-                    feature++;
-                }
-                if (feature != FACE_VEC_SIZE) {
-                    throw std::runtime_error("improper feature vector dimensions\n");
-                }
-                db.pushStudentData(data, entity);
-            }
-            if (updateNum != 0) {
-                throw std::runtime_error("inproper alignment\n");
-            }
-            if (entity == entities) {
-                throw std::runtime_error("unexpected number of entities\n");
-            }
-        }
-        file.close();
-        printf("Done\n");
-    }
-    catch (const std::exception& err) {
-        std::cerr << "Failed to read dataset: " << err.what() << std::endl;
-    }
-}
-
 int main() {
 
     db.connect();
     db.createTables();
-
-    uploadDataSet("../../../../dataset.csv", 9, 12);
 
     printf("Loading map ... ");
     Map map("../../../../map.xml");
@@ -192,6 +147,8 @@ int main() {
     printf("Done\n");
 
     db.getSchedules(schedules);
+
+    printf("Ready\n");
 
     while (1) {
         while (period <= 3) {

@@ -19,7 +19,9 @@ public:
     bool query(const char* sql, boost::mysql::results& result);
     
     void createTables();
+
     void getEntities(std::vector<EntityPtr>& vec);
+    bool getEntityFeatures(EntityPtr entity, int devId);
 
     void pushUpdate(int devId, const boost::span<UCHAR> facialFeatures);
     void getNewUpdates(std::vector<UpdatePtr>& updates);
@@ -42,9 +44,11 @@ public:
 
     int getScheduledRoom(int studentId, int period);
     void getSchedules(std::vector<Schedule>& schedules);
+    void addToSchedule(int studentId, int period, int roomId);
     void setAttendance(int room, int period, int studentId, AttendanceStatus status);
     int getPeriod();
 
+    int addStudent();
     void pushStudentData(UpdatePtr data, int studentId);
 
 private:

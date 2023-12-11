@@ -1,0 +1,17 @@
+# CMake generation dependency list for this directory.
+C:/Program Files/CMake/share/cmake-3.24/Modules/FindBoost.cmake
+C:/Program Files/CMake/share/cmake-3.24/Modules/FindOpenSSL.cmake
+C:/Program Files/CMake/share/cmake-3.24/Modules/FindPackageHandleStandardArgs.cmake
+C:/Program Files/CMake/share/cmake-3.24/Modules/FindPackageMessage.cmake
+C:/Program Files/CMake/share/cmake-3.24/Modules/SelectLibraryConfigurations.cmake
+C:/Users/paul/Desktop/C++/facial-attendance/utils/CMakeLists.txt
+C:/tools/vcpkg/installed/x64-windows/share/boost/vcpkg-cmake-wrapper.cmake
+C:/tools/vcpkg/installed/x64-windows/share/eigen3/Eigen3Config.cmake
+C:/tools/vcpkg/installed/x64-windows/share/eigen3/Eigen3ConfigVersion.cmake
+C:/tools/vcpkg/installed/x64-windows/share/eigen3/Eigen3Targets.cmake
+C:/tools/vcpkg/installed/x64-windows/share/fmt/fmt-config-version.cmake
+C:/tools/vcpkg/installed/x64-windows/share/fmt/fmt-config.cmake
+C:/tools/vcpkg/installed/x64-windows/share/fmt/fmt-targets-debug.cmake
+C:/tools/vcpkg/installed/x64-windows/share/fmt/fmt-targets-release.cmake
+C:/tools/vcpkg/installed/x64-windows/share/fmt/fmt-targets.cmake
+C:/tools/vcpkg/installed/x64-windows/share/openssl/vcpkg-cmake-wrapper.cmake

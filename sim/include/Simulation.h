@@ -25,4 +25,7 @@ private:
 	std::vector<Device*> _devices;
 	std::vector<EntityPtr> _entities;
 
+	void uploadDataSet(std::string filename, int entities, int imgs);
+	void getSchedules();
+
 };

@@ -65,23 +65,28 @@ void DBConnection::createTables() {
     boost::mysql::results r;
 
     query("CREATE TABLE IF NOT EXISTS students (\
-        id INT, \
+        id INT AUTO_INCREMENT PRIMARY KEY\
+    )", r);
+    query("CREATE TABLE IF NOT EXISTS facial_data (\
+        student_id INT, \
         device_id INT, \
-        facial_features BLOB(512) \
+        facial_features BLOB(512), \
+        CONSTRAINT FK_student FOREIGN KEY (student_id) REFERENCES students(id)\
     )", r);
     query("CREATE TABLE IF NOT EXISTS schedules (\
         student_id INT, \
         period INT, \
         room_id INT, \
-        CONSTRAINT FK_student FOREIGN KEY (student_id) REFERENCES students(id)\
+        CONSTRAINT FK_student2 FOREIGN KEY (student_id) REFERENCES students(id)\
     )", r);
+    //         
     query("CREATE TABLE IF NOT EXISTS attendance (\
         day DATE DEFAULT CURRENT_DATE, \
         room_id INT, \
         period INT, \
         student_id INT, \
         status ENUM('PRESENT', 'ABSENT'), \
-        CONSTRAINT FK_student2 FOREIGN KEY (student_id) REFERENCES students(id) \
+        CONSTRAINT FK_student3 FOREIGN KEY(student_id) REFERENCES students(id)\
     )", r);
 
     const int face_bytes = FACE_VEC_SIZE * 4;
@@ -92,7 +97,7 @@ void DBConnection::createTables() {
         mean_facial_features BLOB({}), \
         cov_facial_features BLOB({}), \
         student_id INT, \
-        CONSTRAINT FK_stu FOREIGN KEY (student_id) REFERENCES students(id) \
+        CONSTRAINT FK_student4 FOREIGN KEY (student_id) REFERENCES students(id) \
     )", face_bytes, face_cov_bytes).c_str(), r);
     query(fmt::format("CREATE TABLE IF NOT EXISTS short_term_states (\
         id INT AUTO_INCREMENT PRIMARY KEY NOT NULL, \
@@ -124,19 +129,18 @@ void DBConnection::getEntities(std::vector<EntityPtr>& vec) {
     printf("Loading entities ... ");
     try {
         boost::mysql::results result;
-        _conn.execute("SELECT id, facial_features FROM students", result);
+        _conn.execute("SELECT id FROM students", result);
         if (!result.empty()) {
             for (const boost::mysql::row_view& row : result.rows()) {
                 int id = row.at(0).as_int64();
 
                 std::vector<int> schedule;
-                boost::mysql::results scheduleResult;
-                _conn.execute(_conn.prepare_statement("SELECT room_id FROM schedules WHERE student_id=? ORDER BY period ASC").bind(id), scheduleResult);
-                for (const boost::mysql::row_view& scheduleRow : scheduleResult.rows()) {
-                    schedule.push_back(scheduleRow[0].as_int64());
-                }
-
-                vec.push_back(EntityPtr(new Entity(id, row.at(1).as_blob(), schedule)));
+                //boost::mysql::results scheduleResult;
+                //_conn.execute(_conn.prepare_statement("SELECT room_id FROM schedules WHERE student_id=? ORDER BY period ASC").bind(id), scheduleResult);
+                //for (const boost::mysql::row_view& scheduleRow : scheduleResult.rows()) {
+                //    schedule.push_back(scheduleRow[0].as_int64());
+                //}
+                vec.push_back(EntityPtr(new Entity(id, schedule)));
             }
         }
     }
@@ -146,6 +150,25 @@ void DBConnection::getEntities(std::vector<EntityPtr>& vec) {
     }
     printf("Done\n");
 }
+
+bool DBConnection::getEntityFeatures(EntityPtr entity, int devId) {
+    try {
+        boost::mysql::results result;
+        _conn.execute(_conn.prepare_statement(
+            "SELECT facial_features FROM facial_data WHERE student_id=? AND device_id=?"
+            ).bind(entity->id, devId), result);
+        if (result.rows().size() > 0) {
+            entity->setFacialFeatures(result.rows()[0][0].as_blob());
+            return true;
+        }
+    }
+    catch (const boost::mysql::error_with_diagnostics& err) {
+        std::cerr << "Error: " << err.what() << '\n'
+            << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
+    }
+    return false;
+}
+
 
 void DBConnection::pushUpdate(int devId, const boost::span<UCHAR> facialFeatures) {
     fmt::print("Pushing update for device {} ... ", devId);
@@ -263,7 +286,7 @@ void DBConnection::getLongTermStates(std::vector<EntityStatePtr> &states) {
     query("SELECT id, mean_facial_features, cov_facial_features FROM long_term_states ORDER BY id ASC", result);
     if (!result.empty()) {
         for (const boost::mysql::row_view& row : result.rows()) {
-            if (row[2].is_int64()) {
+            if (row[3].is_int64()) {
                 states.push_back(EntityStatePtr(new LongTermState(row[0].as_int64(), row[1].as_blob(), row[2].as_blob(), row[3].as_int64())));
             }
             states.push_back(EntityStatePtr(new LongTermState(row[0].as_int64(), row[1].as_blob(), row[2].as_blob())));
@@ -277,8 +300,8 @@ int DBConnection::createLongTermState(ShortTermStatePtr sts) {
         printf("Creating long term state ... ");
         boost::mysql::results result;
         _conn.execute(_conn.prepare_statement(
-            "INSERT INTO long_term_states (mean_facial_features) VALUES(?)"
-        ).bind(sts->getFacialFeatures()), result);
+            "INSERT INTO long_term_states (mean_facial_features, cov_facial_features) VALUES(?,?)"
+        ).bind(sts->getFacialFeatures(), sts->getFacialFeaturesCovSpan()), result);
         query("SELECT LAST_INSERT_ID()", result);
         printf("Done\n");
         return result.rows()[0][0].as_uint64();
@@ -326,7 +349,7 @@ void DBConnection::getShortTermStates(std::vector<EntityStatePtr> &states) {
     query("SELECT id, mean_facial_features, cov_facial_features, last_update_device_id, long_term_state_key FROM short_term_states ORDER BY id ASC", result);
     if (!result.empty()) {
         for (const boost::mysql::row_view& row : result.rows()) {
-            if (row[3].is_int64()) {
+            if (row[4].is_int64()) {
                 states.push_back(EntityStatePtr(new ShortTermState(row[0].as_int64(), row[1].as_blob(), row[2].as_blob(), row[3].as_int64(), row[4].as_int64())));
             } else {
                 states.push_back(EntityStatePtr(new ShortTermState(row[0].as_int64(), row[1].as_blob(), row[2].as_blob(), row[3].as_int64())));
@@ -342,12 +365,12 @@ int DBConnection::createShortTermState(UpdateCPtr update, LongTermStatePtr ltSta
         boost::mysql::results result;
         if (ltState != nullptr) {
             _conn.execute(_conn.prepare_statement(
-                "INSERT INTO short_term_states (mean_facial_features, last_update_device_id, long_term_state_key) VALUES(?,?,?)"
-            ).bind(update->getFacialFeatures(), update->deviceId, ltState->id), result);
+                "INSERT INTO short_term_states (mean_facial_features, cov_facial_features, last_update_device_id, long_term_state_key) VALUES(?,?,?,?)"
+            ).bind(update->getFacialFeatures(), update->getFacialFeaturesCovSpan(), update->deviceId, ltState->id), result);
         } else {
             _conn.execute(_conn.prepare_statement(
-                "INSERT INTO short_term_states (mean_facial_features, last_update_device_id) VALUES(?,?)"
-            ).bind(update->getFacialFeatures(), update->deviceId), result);
+                "INSERT INTO short_term_states (mean_facial_features, cov_facial_features, last_update_device_id) VALUES(?,?,?)"
+            ).bind(update->getFacialFeatures(), update->getFacialFeaturesCovSpan(), update->deviceId), result);
         }
         query("SELECT LAST_INSERT_ID()", result);
         printf("Done\n");
@@ -421,7 +444,7 @@ void DBConnection::getSchedules(std::vector<Schedule>& schedules) {
             student = row[0].as_int64();
             rooms.push_back(row[1].as_int64());
         }
-        schedules.push_back(Schedule{ student, rooms });
+        if (student != -1) schedules.push_back(Schedule{ student, rooms });
         printf("Done\n");
     }
     catch (const boost::mysql::error_with_diagnostics& err) {
@@ -430,6 +453,18 @@ void DBConnection::getSchedules(std::vector<Schedule>& schedules) {
     }
 }
 
+void DBConnection::addToSchedule(int studentId, int period, int roomId) {
+    try {
+        boost::mysql::results result;
+        _conn.execute(_conn.prepare_statement(
+            "INSERT INTO schedules (student_id, period, room_id) VALUES (?,?,?)"
+        ).bind(studentId, period, roomId), result);
+    }
+    catch (const boost::mysql::error_with_diagnostics& err) {
+        std::cerr << "Error: " << err.what() << '\n'
+            << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
+    }
+}
 
 void DBConnection::setAttendance(int room, int period, int studentId, AttendanceStatus status) {
     try {
@@ -455,12 +490,25 @@ int DBConnection::getPeriod() {
     }
     return -1;
 }
+int DBConnection::addStudent() {
+    try {
+        boost::mysql::results result;
+        query("INSERT INTO students () VALUES()", result);
+        query("SELECT LAST_INSERT_ID()", result);
+        return result.rows()[0][0].as_uint64();
+    }
+    catch (const boost::mysql::error_with_diagnostics& err) {
+        std::cerr << "Error: " << err.what() << '\n'
+            << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
+    }
+    return -1;
+}
 
 void DBConnection::pushStudentData(UpdatePtr data, int studentId) {
     try {
         boost::mysql::results result;
         _conn.execute(
-            _conn.prepare_statement("INSERT INTO students (id, device_id, facial_features) VALUES(?, ?, ?)")
+            _conn.prepare_statement("INSERT INTO facial_data (student_id, device_id, facial_features) VALUES(?, ?, ?)")
             .bind(studentId, data->deviceId, data->getFacialFeatures()), result);
     }
     catch (const boost::mysql::error_with_diagnostics& err) {

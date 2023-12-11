@@ -73,15 +73,15 @@ void Display::draw() {
 	ci::gl::color(ci::Color::black());
 	ci::TextBox tboxBase = ci::TextBox().alignment(ci::TextBox::CENTER).font(_font).size(glm::ivec2(50, 15));
 
-	if (_entities->size() > 0) {
-		const iGrid& pathMap = *(_map->getPathMap((*_entities)[0]->getNextDoor(1)));
-		for (int x = 0; x < pathMap.size(); x+=4) {
-			for (int y = 0; y < pathMap[x].size(); y+=4) {
-				ci::gl::Texture2dRef textTexture = ci::gl::Texture2d::create(tboxBase.text(std::to_string(pathMap[x][y])).render());
-				ci::gl::draw(textTexture, (glm::vec2(x, y) * scale) - glm::vec2(tboxBase.getSize()) * 0.5f);
-			}
-		}
-	}
+	//if (_entities->size() > 0) {
+	//	const iGrid& pathMap = *(_map->getPathMap((*_entities)[0]->getNextDoor(1)));
+	//	for (int x = 0; x < pathMap.size(); x+=4) {
+	//		for (int y = 0; y < pathMap[x].size(); y+=4) {
+	//			ci::gl::Texture2dRef textTexture = ci::gl::Texture2d::create(tboxBase.text(std::to_string(pathMap[x][y])).render());
+	//			ci::gl::draw(textTexture, (glm::vec2(x, y) * scale) - glm::vec2(tboxBase.getSize()) * 0.5f);
+	//		}
+	//	}
+	//}
 	
 	ci::gl::scale(scale, scale);
 	ci::gl::color(ci::Color(1, 0, 0));

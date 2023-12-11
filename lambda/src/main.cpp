@@ -12,38 +12,31 @@
 #include <utils/DBConnection.h>
 #include <utils/EntityState.h>
 
-#define MATCHING_THRESH 0.1
+#define MATCHING_THRESH 3.0
 
 DBConnection db;
 
-// TODO: initilize
 FFMat R;
 
-EntityStatePtr facialMatch(EntityStatePtr update, const std::vector<EntityStatePtr>& pool, FFMat* R = nullptr) {
-
-    std::shared_ptr<FFMat> updateCov;
-    if (R != nullptr) {
-        updateCov = std::shared_ptr<FFMat>(R);
-    } else {
-        updateCov = std::shared_ptr<FFMat>(&update->facialFeaturesCov);
-    }
+EntityStatePtr facialMatch(EntityStatePtr update, const std::vector<EntityStatePtr>& pool) {
 
     for (const EntityStatePtr &cmp : pool) {
         float distance = 0.0;
 
         // L2Norm
-        //for (int j = 0; j < FACE_VEC_SIZE; j++) {
-        //    distance += pow(update->facialFeatures[j] - cmp->facialFeatures[j], 2);
-        //}
-        //distance /= FACE_VEC_SIZE;
+        for (int j = 0; j < FACE_VEC_SIZE; j++) {
+            distance += pow(update->facialFeatures[j] - cmp->facialFeatures[j], 2);
+        }
+        distance /= FACE_VEC_SIZE;
         
         // Bhattacharyya distance
-        std::unique_ptr<FFVec> diff = std::unique_ptr<FFVec>(new FFVec());
-        std::unique_ptr<FFMat> sigma = std::unique_ptr<FFMat>(new FFMat());
-        *diff = update->facialFeatures - cmp->facialFeatures;
-        *sigma = (*updateCov + cmp->facialFeaturesCov) / 2;
-        distance = float(diff->transpose() * sigma->inverse() * *diff) / 8 + log(sigma->determinant() / sqrt(updateCov->determinant() * cmp->facialFeaturesCov.determinant())) / 2;
+        //std::unique_ptr<FFVec> diff = std::unique_ptr<FFVec>(new FFVec());
+        //std::unique_ptr<FFMat> sigma = std::unique_ptr<FFMat>(new FFMat());
+        //*diff = update->facialFeatures - cmp->facialFeatures;
+        //*sigma = (update->getFacialFeaturesCov() + cmp->facialFeaturesCov) / 2;
+        //distance = float(diff->transpose() * sigma->inverse() * *diff) / 8 + log(sigma->determinant() / sqrt(update->getFacialFeaturesCov().determinant() * cmp->facialFeaturesCov.determinant())) / 2;
 
+        fmt::println("Matching update {} to state {} with distance {}", update->id, cmp->id, distance);
         if (distance < MATCHING_THRESH) {
             return cmp;
         }
@@ -87,7 +80,7 @@ void processUpdate(UpdatePtr update) {
     // match against who could be there
 
     // match against people seen
-    match = facialMatch(updateState, shortTermStates, &R);
+    match = facialMatch(updateState, shortTermStates);
 
     if (match != nullptr) {
 
@@ -136,6 +129,7 @@ void processUpdate(UpdatePtr update) {
 }
 
 void loadUpdateCov(std::string filename) {
+    fmt::print("Loading update covariance matrix from {} ... ", filename);
     try {
         std::ifstream file(filename);
         int updateNum = 0;
@@ -162,6 +156,8 @@ void loadUpdateCov(std::string filename) {
                 throw std::runtime_error("invalid row dimension\n");
             }
         }
+        Update::defaultCov = &R;
+        printf("Done\n");
     }
     catch (const std::exception& err) {
         std::cerr << "Failed to read update covariance: " << err.what() << std::endl;
