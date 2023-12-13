@@ -76,11 +76,13 @@ void Simulation::uploadDataSet(std::string filename, int entities, int imgs) {
 		return;
 	}
 
+	std::vector<std::vector<std::vector<float>>> dataSet;
+	std::vector<std::vector<float>> currentEntity;
 	fmt::print("Uploading dataset to db from {} ... ", filename);
 	try {
 		std::ifstream file(filename);
 		int updateNum = 0;
-		int entity = _db.addStudent();
+		int entity = 0;
 		if (file.is_open()) {
 			std::string line;
 			while (1) {
@@ -90,29 +92,71 @@ void Simulation::uploadDataSet(std::string filename, int entities, int imgs) {
 				std::string num;
 				UpdatePtr data = UpdatePtr(new Update(0, updateNum));
 				int feature = 0;
+				std::vector<float> vec;
 				while (std::getline(s, num, ',')) {
 					data->facialFeatures[feature] = stof(num);
 					feature++;
+					vec.push_back(stof(num));
 				}
+				currentEntity.push_back(vec);
 				if (feature != FACE_VEC_SIZE) {
 					throw std::runtime_error("improper feature vector dimensions\n");
+				}
+				if (updateNum == 0) {
+					entity = _db.addStudent();
 				}
 				_db.pushStudentData(data, entity);
 				updateNum++;
 				if (updateNum == imgs) {
 					updateNum = 0;
-					entity = _db.addStudent();
+					dataSet.push_back(currentEntity);
+					currentEntity.clear();
 				}
 			}
 			if (updateNum != 0) {
 				throw std::runtime_error("inproper alignment\n");
 			}
-			if (entity == entities) {
+			if (entity != entities) {
 				throw std::runtime_error("unexpected number of entities\n");
 			}
 		}
 		file.close();
 		printf("Done\n");
+
+		std::ofstream distancesFile("distances.csv");
+		for (int entity = 0; entity < dataSet.size() - 1; entity++) {
+			for (int otherEntity = entity + 1; otherEntity < dataSet.size(); otherEntity++) {
+				for (int i = 0; i < dataSet[entity].size(); i++) {
+					for (int j = 0; j < dataSet[otherEntity].size(); j++) {
+						float distance = 0.0;
+						for (int k = 0; k < FACE_VEC_SIZE; k++) {
+							distance += pow(dataSet[entity][i][k] - dataSet[otherEntity][j][k], 2);
+						}
+						if (distance != 0.0) {
+							distancesFile << std::to_string(distance) << ", ";
+						}
+					}
+				}
+			}
+		}
+		distancesFile << "\n";
+		for (int entity = 0; entity < dataSet.size(); entity++) {
+			for (int i = 0; i < dataSet[entity].size() - 1; i++) {
+				for (int j = i + 1; j < dataSet[entity].size(); j++) {
+					float distance = 0.0;
+					for (int k = 0; k < FACE_VEC_SIZE; k++) {
+						distance += pow(dataSet[entity][i][k] - dataSet[entity][j][k], 2);
+					}
+					if (distance != 0.0) {
+						distancesFile << std::to_string(distance) << ", ";
+					}
+				}
+			}
+		}
+
+		distancesFile << "\n";
+		distancesFile.close();
+
 	}
 	catch (const std::exception& err) {
 		std::cerr << "Failed to read dataset: " << err.what() << std::endl;

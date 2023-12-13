@@ -268,7 +268,7 @@ LongTermStatePtr DBConnection::getLongTermState(int id) {
         ).bind(id), result);
         printf("Done\n");
         auto row = result.rows()[0];
-        if (row[2].is_int64()) {
+        if (row[3].is_int64()) {
             return LongTermStatePtr(new LongTermState(row[0].as_int64(), row[1].as_blob(), row[2].as_blob(), row[3].as_int64()));
         }
         return LongTermStatePtr(new LongTermState(row[0].as_int64(), row[1].as_blob(), row[2].as_blob()));

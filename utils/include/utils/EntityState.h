@@ -90,6 +90,7 @@ public:
 	Update(int id_, int deviceId_) : Update(id_, deviceId_, boost::span<const UCHAR>()) {}
 
 	FFMat& getFacialFeaturesCov() { return *defaultCov; }
+	const boost::span<UCHAR> getFacialFeaturesCovSpan() const { return boost::span<UCHAR>(reinterpret_cast<UCHAR*>(const_cast<float*>(defaultCov->data())), defaultCov->size() * sizeof(float)); }
 
 };
 

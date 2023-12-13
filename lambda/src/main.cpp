@@ -12,7 +12,7 @@
 #include <utils/DBConnection.h>
 #include <utils/EntityState.h>
 
-#define MATCHING_THRESH 3.0
+#define MATCHING_THRESH 130.0
 
 DBConnection db;
 
@@ -27,7 +27,6 @@ EntityStatePtr facialMatch(EntityStatePtr update, const std::vector<EntityStateP
         for (int j = 0; j < FACE_VEC_SIZE; j++) {
             distance += pow(update->facialFeatures[j] - cmp->facialFeatures[j], 2);
         }
-        distance /= FACE_VEC_SIZE;
         
         // Bhattacharyya distance
         //std::unique_ptr<FFVec> diff = std::unique_ptr<FFVec>(new FFVec());
@@ -53,18 +52,18 @@ void applyUpdate(ShortTermStatePtr state, UpdateCPtr update) {
     // z measurement vector is update->facialFeatures
     // H is identity
 
-    static FFMat I = FFMat::Identity();
-    std::unique_ptr<FFMat> K = std::unique_ptr<FFMat>(new FFMat());
-    *K = state->facialFeaturesCov * (state->facialFeaturesCov + R).inverse();
+    //static FFMat I = FFMat::Identity();
+    //std::unique_ptr<FFMat> K = std::unique_ptr<FFMat>(new FFMat());
+    //*K = state->facialFeaturesCov * (state->facialFeaturesCov + R).inverse();
 
-    state->facialFeatures += *K * (update->facialFeatures - state->facialFeatures);
-    state->facialFeaturesCov = (I - *K) * state->facialFeaturesCov;
+    //state->facialFeatures += *K * (update->facialFeatures - state->facialFeatures);
+    //state->facialFeaturesCov = (I - *K) * state->facialFeaturesCov;
 
 }
 
 void processUpdate(UpdatePtr update) {
 
-    fmt::print("Proccessing update from device {}\n", update->deviceId);
+    fmt::print("Proccessing update {} from device {}\n", update->id, update->deviceId);
 
     EntityStatePtr updateState = std::static_pointer_cast<EntityState>(update);
     EntityStatePtr match = nullptr;
