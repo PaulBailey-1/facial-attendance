@@ -10,6 +10,7 @@ Simulation::Simulation() {
 	_db.connect();
 
 	_db.createTables();
+	_db.clearTables();
 
 	printf("Loading map ... ");
 

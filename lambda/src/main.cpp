@@ -16,7 +16,7 @@
 
 DBConnection db;
 
-FFMat R;
+FFMat R = FFMat::Zero();
 
 EntityStatePtr facialMatch(EntityStatePtr update, const std::vector<EntityStatePtr>& pool) {
 
@@ -41,24 +41,6 @@ EntityStatePtr facialMatch(EntityStatePtr update, const std::vector<EntityStateP
         }
     }
     return nullptr;
-}
-
-void applyUpdate(ShortTermStatePtr state, UpdateCPtr update) {
-
-    state->lastUpdateDeviceId = update->deviceId;
-
-    //Kalman update
-
-    // z measurement vector is update->facialFeatures
-    // H is identity
-
-    //static FFMat I = FFMat::Identity();
-    //std::unique_ptr<FFMat> K = std::unique_ptr<FFMat>(new FFMat());
-    //*K = state->facialFeaturesCov * (state->facialFeaturesCov + R).inverse();
-
-    //state->facialFeatures += *K * (update->facialFeatures - state->facialFeatures);
-    //state->facialFeaturesCov = (I - *K) * state->facialFeaturesCov;
-
 }
 
 void processUpdate(UpdatePtr update) {
@@ -87,7 +69,9 @@ void processUpdate(UpdatePtr update) {
 
         //if matched to short term, apply update, match to long term
         ShortTermStatePtr stMatch = std::static_pointer_cast<ShortTermState>(match);
-        applyUpdate(stMatch, update);
+  
+        stMatch->lastUpdateDeviceId = update->deviceId;
+        stMatch->kalmanUpdate(update);
 
         LongTermStatePtr ltMatch = std::static_pointer_cast<LongTermState>(facialMatch(stMatch, longTermStates));
         if (ltMatch != nullptr) {
@@ -143,7 +127,8 @@ void loadUpdateCov(std::string filename) {
                 std::string num;
                 int col = 0;
                 while (std::getline(s, num, ',')) {
-                    R(row, col) = stof(num);
+                    if (row == col)
+                        R(row, col) = stof(num);
                     col++;
                 }
                 if (col != FACE_VEC_SIZE) {

@@ -19,6 +19,7 @@ public:
     bool query(const char* sql, boost::mysql::results& result);
     
     void createTables();
+    void clearTables();
 
     void getEntities(std::vector<EntityPtr>& vec);
     bool getEntityFeatures(EntityPtr entity, int devId);

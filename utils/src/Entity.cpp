@@ -1,6 +1,21 @@
 
 #include "utils/EntityState.h"
 
+void EntityState::kalmanUpdate(std::shared_ptr<EntityState> update) {
+
+   // z measurement vector is update->facialFeatures
+   // H is identity
+
+   static FFMat I = FFMat::Identity();
+   static FFMat* K = new FFMat();
+   K = update->getFacialFeaturesCov();
+   *K = facialFeaturesCov * (facialFeaturesCov + *update->getFacialFeaturesCov()).inverse();
+
+   facialFeatures += *K * (update->facialFeatures - facialFeatures);
+   facialFeaturesCov = (I - *K) * facialFeaturesCov;
+
+}
+
 void Entity::step(float dt) {
 
     const iGrid& pathMap = *_pathMap;

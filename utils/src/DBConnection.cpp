@@ -125,6 +125,20 @@ void DBConnection::createTables() {
 
 }
 
+void DBConnection::clearTables() {
+    printf("Checking tables ... ");
+    boost::mysql::results r;
+	query("SET FOREIGN_KEY_CHECKS = 0", r);
+    query("TRUNCATE attendance", r);
+    query("TRUNCATE facial_data", r);
+    query("TRUNCATE long_term_states", r);
+    query("TRUNCATE short_term_states", r);
+    query("TRUNCATE students", r);
+    query("TRUNCATE updates", r);
+	query("SET FOREIGN_KEY_CHECKS = 1", r);
+    printf("Done\n");
+}
+
 void DBConnection::getEntities(std::vector<EntityPtr>& vec) {
     printf("Loading entities ... ");
     try {
@@ -317,9 +331,15 @@ void DBConnection::updateLongTermState(LongTermStatePtr lts) {
     try {
         fmt::print("Updating long term state {} ... ", lts->id);
         boost::mysql::results result;
-        _conn.execute(_conn.prepare_statement(
-            "UPDATE long_term_states SET mean_facial_features=?, student_id=? WHERE id=?"
-        ).bind(lts->getFacialFeatures(), lts->studentId, lts->id), result);
+        if (lts->studentId == -1) {
+            _conn.execute(_conn.prepare_statement(
+                "UPDATE long_term_states SET mean_facial_features=?, cov_facial_features=? WHERE id=?"
+            ).bind(lts->getFacialFeatures(), lts->getFacialFeaturesCovSpan(), lts->id), result);
+        } else {
+            _conn.execute(_conn.prepare_statement(
+                "UPDATE long_term_states SET mean_facial_features=?, cov_facial_features=?, student_id=? WHERE id=?"
+            ).bind(lts->getFacialFeatures(), lts->getFacialFeaturesCovSpan(), lts->studentId, lts->id), result);
+        }
         printf("Done\n");
     }
     catch (const boost::mysql::error_with_diagnostics& err) {

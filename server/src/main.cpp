@@ -16,13 +16,6 @@ int period = 1;
 std::vector<Schedule> schedules;
 std::vector<std::set<int>> devDoorsMatches;
 
-void applyLongTermUpdate(LongTermStatePtr lts, ShortTermStatePtr sts) {
-    // TODO: should be optimal fusion
-    for (int i = 0; i < FACE_VEC_SIZE; i++) {
-        lts->facialFeatures[i] = sts->facialFeatures[i];
-    }
-}
-
 int matchStudent(int stsId) {
     std::vector<int> devPath;
     db.getUpdatesPath(stsId, devPath);
@@ -96,20 +89,29 @@ void nextDay() {
 
     for (EntityStatePtr& es : shortTermStates) {
         ShortTermStatePtr sts = std::static_pointer_cast<ShortTermState>(es);
-        LongTermStatePtr lts;
+        LongTermStatePtr lts = nullptr;
         if (sts->longTermStateKey != -1) {
 
             lts = db.getLongTermState(sts->longTermStateKey);
-            applyLongTermUpdate(lts, sts);
+
+            // Applying long term update
+            lts->kalmanUpdate(sts);
+            //for (int i = 0; i < FACE_VEC_SIZE; i++) {
+            //    lts->facialFeatures[i] = sts->facialFeatures[i];
+            //}
 
             db.updateLongTermState(lts);
 
         } else {
-            int ltsId = db.createLongTermState(sts);
-            lts = LongTermStatePtr(new LongTermState(ltsId));
+            float certainty = sts->facialFeaturesCov.sum();
+            fmt::println("Promoting sts {}, certainty {}", sts->id, certainty);
+            if (certainty < 7.2 / 6.0) {
+                int ltsId = db.createLongTermState(sts);
+                lts = LongTermStatePtr(new LongTermState(ltsId));
+            }
         }
 
-        if (lts->studentId == -1) {
+        if (lts != nullptr && lts->studentId == -1) {
             lts->studentId = matchStudent(sts->id);
             if (lts->studentId != -1)
                 db.setLongTermStateStudent(lts);

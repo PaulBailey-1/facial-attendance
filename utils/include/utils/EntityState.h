@@ -33,8 +33,10 @@ public:
 	void setFacialFeatures(boost::span<const UCHAR> facialFeatures_) {
 		memcpy(facialFeatures.data(), facialFeatures_.data(), facialFeatures_.size_bytes());
 	}
-	const boost::span<UCHAR> getFacialFeaturesCovSpan() const { return boost::span<UCHAR>(reinterpret_cast<UCHAR*>(const_cast<float*>(facialFeaturesCov.data())), facialFeaturesCov.size() * sizeof(float)); }
-	FFMat& getFacialFeaturesCov() { return facialFeaturesCov; }
+	virtual const boost::span<UCHAR> getFacialFeaturesCovSpan() const { return boost::span<UCHAR>(reinterpret_cast<UCHAR*>(const_cast<float*>(facialFeaturesCov.data())), facialFeaturesCov.size() * sizeof(float)); }
+	virtual FFMat* getFacialFeaturesCov() { return &facialFeaturesCov; }
+
+	void kalmanUpdate(std::shared_ptr<EntityState> update);
 
 	friend bool operator < (const EntityState& a, const EntityState& b) {
 		return a.id < b.id;
@@ -89,7 +91,7 @@ public:
 	
 	Update(int id_, int deviceId_) : Update(id_, deviceId_, boost::span<const UCHAR>()) {}
 
-	FFMat& getFacialFeaturesCov() { return *defaultCov; }
+	FFMat* getFacialFeaturesCov() { return defaultCov; }
 	const boost::span<UCHAR> getFacialFeaturesCovSpan() const { return boost::span<UCHAR>(reinterpret_cast<UCHAR*>(const_cast<float*>(defaultCov->data())), defaultCov->size() * sizeof(float)); }
 
 };
