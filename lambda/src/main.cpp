@@ -73,12 +73,14 @@ void processUpdate(UpdatePtr update) {
         stMatch->lastUpdateDeviceId = update->deviceId;
         stMatch->kalmanUpdate(update);
 
+        fmt::println("Rematching sts {} to long term states", stMatch->id);
         LongTermStatePtr ltMatch = std::static_pointer_cast<LongTermState>(facialMatch(stMatch, longTermStates));
         if (ltMatch != nullptr) {
             stMatch->longTermStateKey = ltMatch->id;
         }
 
         update->shortTermStateId = stMatch->id;
+        stMatch->updateCount++;
         db.updateShortTermState(stMatch);
         
     } else {
@@ -128,7 +130,7 @@ void loadUpdateCov(std::string filename) {
                 int col = 0;
                 while (std::getline(s, num, ',')) {
                     if (row == col)
-                        R(row, col) = stof(num);
+                       R(row, col) = stof(num);
                     col++;
                 }
                 if (col != FACE_VEC_SIZE) {

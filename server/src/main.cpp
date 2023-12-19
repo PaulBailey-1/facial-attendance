@@ -63,17 +63,14 @@ void nextPeriod() {
 
     fmt::print("Running period {}\n", period);
 
-    std::vector<EntityStatePtr> shortTermStates;
-    db.getShortTermStates(shortTermStates);
-
-    for (EntityStatePtr& es : shortTermStates) {
-        ShortTermStatePtr sts = std::static_pointer_cast<ShortTermState>(es);
-        if (sts->longTermStateKey != -1) {
-                  
-            LongTermStatePtr lts = db.getLongTermState(sts->longTermStateKey);
-            if (lts->studentId != -1) {
-                setAttendance(sts->lastUpdateDeviceId, lts->studentId);
-            }
+    std::set<int> ltsIds;
+    db.getLinkedLongTermStateIds(ltsIds);
+    
+    for (auto i = ltsIds.begin(); i != ltsIds.end(); i++) {
+        ShortTermStatePtr sts = db.getLastShortTermState(*i);
+        LongTermStatePtr lts = db.getLongTermState(sts->longTermStateKey);
+        if (lts->studentId != -1) {
+            setAttendance(sts->lastUpdateDeviceId, lts->studentId);
         }
     }
 
@@ -103,11 +100,10 @@ void nextDay() {
             db.updateLongTermState(lts);
 
         } else {
-            float certainty = sts->facialFeaturesCov.sum();
-            fmt::println("Promoting sts {}, certainty {}", sts->id, certainty);
-            if (certainty < 7.2 / 6.0) {
+            if (sts->updateCount > 2) {
+                fmt::println("Promoting sts {}", sts->id);
                 int ltsId = db.createLongTermState(sts);
-                lts = LongTermStatePtr(new LongTermState(ltsId));
+                lts = LongTermStatePtr(new LongTermState(ltsId)); 
             }
         }
 

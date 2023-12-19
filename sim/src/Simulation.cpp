@@ -49,7 +49,7 @@ void Simulation::run() {
 
 	while (1) {
 		for (EntityPtr entity : _entities) {
-			entity->step(0.1);
+			entity->step(0.2);
 		}
 		for (Device* dev : _devices) {
 			dev->run(_entities);

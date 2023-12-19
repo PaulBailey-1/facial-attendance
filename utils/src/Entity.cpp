@@ -1,4 +1,6 @@
 
+#include <fmt/core.h>
+
 #include "utils/EntityState.h"
 
 void EntityState::kalmanUpdate(std::shared_ptr<EntityState> update) {
@@ -8,7 +10,6 @@ void EntityState::kalmanUpdate(std::shared_ptr<EntityState> update) {
 
    static FFMat I = FFMat::Identity();
    static FFMat* K = new FFMat();
-   K = update->getFacialFeaturesCov();
    *K = facialFeaturesCov * (facialFeaturesCov + *update->getFacialFeaturesCov()).inverse();
 
    facialFeatures += *K * (update->facialFeatures - facialFeatures);

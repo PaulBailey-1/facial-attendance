@@ -118,13 +118,15 @@ public:
 
 	int lastUpdateDeviceId;
 	int longTermStateKey;
+	int updateCount;
 
-	ShortTermState(int id_, boost::span<const UCHAR> facialFeatures_, boost::span<const UCHAR> facialFeaturesCov_, int lastUpdateDeviceId_, int longTermStateKey_) : EntityState(id_, facialFeatures_, facialFeaturesCov_) {
+	ShortTermState(int id_, boost::span<const UCHAR> facialFeatures_, boost::span<const UCHAR> facialFeaturesCov_, int updateCount_, int lastUpdateDeviceId_, int longTermStateKey_) : EntityState(id_, facialFeatures_, facialFeaturesCov_) {
 		lastUpdateDeviceId = lastUpdateDeviceId_;
 		longTermStateKey = longTermStateKey_;
+		updateCount = updateCount_;
 	}
 
-	ShortTermState(int id_, boost::span<const UCHAR> facialFeatures_, boost::span<const UCHAR> facialFeaturesCov_, int lastUpdateDeviceId_) : ShortTermState(id_, facialFeatures_, facialFeaturesCov_, lastUpdateDeviceId_, -1) {}
+	ShortTermState(int id_, boost::span<const UCHAR> facialFeatures_, boost::span<const UCHAR> facialFeaturesCov_, int updateCount_, int lastUpdateDeviceId_) : ShortTermState(id_, facialFeatures_, facialFeaturesCov_, updateCount_, lastUpdateDeviceId_, -1) {}
 };
 
 typedef std::shared_ptr<EntityState> EntityStatePtr;

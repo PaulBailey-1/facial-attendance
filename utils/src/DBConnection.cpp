@@ -103,6 +103,7 @@ void DBConnection::createTables() {
         id INT AUTO_INCREMENT PRIMARY KEY NOT NULL, \
         mean_facial_features BLOB({}) NOT NULL, \
         cov_facial_features BLOB({}), \
+        update_count INT, \
         last_update_device_id INT NOT NULL, \
         last_update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, \
         expected_next_update_device_id INT, \
@@ -135,6 +136,7 @@ void DBConnection::clearTables() {
     query("TRUNCATE short_term_states", r);
     query("TRUNCATE students", r);
     query("TRUNCATE updates", r);
+    query("TRUNCATE schedules", r);
 	query("SET FOREIGN_KEY_CHECKS = 1", r);
     printf("Done\n");
 }
@@ -366,17 +368,45 @@ void DBConnection::setLongTermStateStudent(LongTermStatePtr lts) {
 void DBConnection::getShortTermStates(std::vector<EntityStatePtr> &states) {
     printf("Fetching short term states ... ");
     boost::mysql::results result;
-    query("SELECT id, mean_facial_features, cov_facial_features, last_update_device_id, long_term_state_key FROM short_term_states ORDER BY id ASC", result);
+    query("SELECT id, mean_facial_features, cov_facial_features, update_count, last_update_device_id, long_term_state_key FROM short_term_states ORDER BY id ASC", result);
     if (!result.empty()) {
         for (const boost::mysql::row_view& row : result.rows()) {
-            if (row[4].is_int64()) {
-                states.push_back(EntityStatePtr(new ShortTermState(row[0].as_int64(), row[1].as_blob(), row[2].as_blob(), row[3].as_int64(), row[4].as_int64())));
+            if (row[5].is_int64()) {
+                states.push_back(EntityStatePtr(new ShortTermState(row[0].as_int64(), row[1].as_blob(), row[2].as_blob(), row[3].as_int64(), row[4].as_int64(), row[5].as_int64())));
             } else {
-                states.push_back(EntityStatePtr(new ShortTermState(row[0].as_int64(), row[1].as_blob(), row[2].as_blob(), row[3].as_int64())));
+                states.push_back(EntityStatePtr(new ShortTermState(row[0].as_int64(), row[1].as_blob(), row[2].as_blob(), row[3].as_int64(), row[4].as_int64())));
             }
         }
     }
     printf("Done\n");
+}
+
+void DBConnection::getLinkedLongTermStateIds(std::set<int>& ids) {
+    printf("Fetching linked long term state ids ... ");
+    boost::mysql::results result;
+    query("SELECT long_term_state_key FROM short_term_states WHERE long_term_state_key IS NOT NULL", result);
+    if (!result.empty()) {
+        for (const boost::mysql::row_view& row : result.rows()) {
+            ids.insert(row[0].as_int64());
+        }
+    }
+    printf("Done\n");
+}
+
+ShortTermStatePtr DBConnection::getLastShortTermState(int ltsId) {
+    fmt::print("Fetching last short term state with lts {} ... ", ltsId);
+    boost::mysql::results result;
+    _conn.execute(_conn.prepare_statement(
+        "SELECT id, mean_facial_features, cov_facial_features, update_count, last_update_device_id, long_term_state_key \
+        FROM short_term_states WHERE long_term_state_key=? ORDER BY last_update_time DESC LIMIT 1"
+        ).bind(ltsId), result);
+    if (!result.empty()) {
+        for (const boost::mysql::row_view& row : result.rows()) {
+            printf("Done\n");
+            return ShortTermStatePtr(new ShortTermState(row[0].as_int64(), row[1].as_blob(), row[2].as_blob(), row[3].as_int64(), row[4].as_int64(), row[5].as_int64()));
+        }
+    }
+    
 }
 
 int DBConnection::createShortTermState(UpdateCPtr update, LongTermStatePtr ltState) {
@@ -385,12 +415,12 @@ int DBConnection::createShortTermState(UpdateCPtr update, LongTermStatePtr ltSta
         boost::mysql::results result;
         if (ltState != nullptr) {
             _conn.execute(_conn.prepare_statement(
-                "INSERT INTO short_term_states (mean_facial_features, cov_facial_features, last_update_device_id, long_term_state_key) VALUES(?,?,?,?)"
-            ).bind(update->getFacialFeatures(), update->getFacialFeaturesCovSpan(), update->deviceId, ltState->id), result);
+                "INSERT INTO short_term_states (mean_facial_features, cov_facial_features, update_count, last_update_device_id, long_term_state_key) VALUES(?,?,?,?,?)"
+            ).bind(update->getFacialFeatures(), update->getFacialFeaturesCovSpan(), 1, update->deviceId, ltState->id), result);
         } else {
             _conn.execute(_conn.prepare_statement(
-                "INSERT INTO short_term_states (mean_facial_features, cov_facial_features, last_update_device_id) VALUES(?,?,?)"
-            ).bind(update->getFacialFeatures(), update->getFacialFeaturesCovSpan(), update->deviceId), result);
+                "INSERT INTO short_term_states (mean_facial_features, cov_facial_features, update_count, last_update_device_id) VALUES(?,?,?,?)"
+            ).bind(update->getFacialFeatures(), update->getFacialFeaturesCovSpan(), 1, update->deviceId), result);
         }
         query("SELECT LAST_INSERT_ID()", result);
         printf("Done\n");
@@ -409,12 +439,12 @@ void DBConnection::updateShortTermState(ShortTermStatePtr state) {
         boost::mysql::results result;
         if (state->longTermStateKey != -1) {
             _conn.execute(_conn.prepare_statement(
-                "UPDATE short_term_states SET mean_facial_features=?, last_update_device_id=?, long_term_state_key=? WHERE id=?"
-            ).bind(state->getFacialFeatures(), state->lastUpdateDeviceId, state->longTermStateKey, state->id), result);
+                "UPDATE short_term_states SET mean_facial_features=?, cov_facial_features=?, update_count=?, last_update_device_id=?, long_term_state_key=? WHERE id=?"
+            ).bind(state->getFacialFeatures(), state->getFacialFeaturesCovSpan(), state->updateCount, state->lastUpdateDeviceId, state->longTermStateKey, state->id), result);
         } else {
             _conn.execute(_conn.prepare_statement(
-                "UPDATE short_term_states SET mean_facial_features=?, last_update_device_id=? WHERE id=?"
-            ).bind(state->getFacialFeatures(), state->lastUpdateDeviceId, state->id), result);
+                "UPDATE short_term_states SET mean_facial_features=?, cov_facial_features=?, update_count=?, last_update_device_id=? WHERE id=?"
+            ).bind(state->getFacialFeatures(), state->getFacialFeaturesCovSpan(), state->updateCount, state->lastUpdateDeviceId, state->id), result);
         }
         printf("Done\n");
     }

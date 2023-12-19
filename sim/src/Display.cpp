@@ -31,6 +31,7 @@ void Display::setup() {
 
 void Display::draw() {
 	ci::ColorA grey = ci::Color::gray(0.4);
+	static ci::TextBox tboxBase = ci::TextBox().alignment(ci::TextBox::CENTER).font(_font).size(glm::ivec2(50, 15));
 
 	ci::gl::clear(grey);
 
@@ -62,16 +63,23 @@ void Display::draw() {
 
 	ci::gl::color(ci::Color(90/255.0, 65/255.0, 55/255.0));
 	for (const Door &door : _map->doors) {
-		ci::gl::pushModelMatrix();
-		ci::gl::translate(door.pos);
-		ci::gl::rotate(door.angle * (M_PI / 180));
-		ci::gl::drawSolidRect(ci::Rectf({ -DOOR_WIDTH / 2, -0.5 }, { DOOR_WIDTH / 2, 0.5 }));
-		ci::gl::popModelMatrix();
+		//ci::gl::pushModelMatrix();
+		//ci::gl::translate(door.pos);
+		//ci::gl::rotate(door.angle * (M_PI / 180));
+		//ci::gl::drawSolidRect(ci::Rectf({ -DOOR_WIDTH / 2, -0.5 }, { DOOR_WIDTH / 2, 0.5 }));
+		//ci::gl::popModelMatrix();
+
+		ci::gl::scale(1 / scale, 1 / scale);
+		ci::gl::color(ci::Color::black());
+		ci::gl::Texture2dRef textTexture = ci::gl::Texture2d::create(tboxBase.text(std::to_string(door.id)).render());
+		glm::vec2 txtPos = (door.pos * scale) - glm::vec2(tboxBase.getSize()) * 0.5f;
+		ci::gl::draw(textTexture, txtPos);
+		ci::gl::scale(scale, scale);
+
 	}
 
-	ci::gl::scale(1/scale, 1/scale);
-	ci::gl::color(ci::Color::black());
-	ci::TextBox tboxBase = ci::TextBox().alignment(ci::TextBox::CENTER).font(_font).size(glm::ivec2(50, 15));
+	//ci::gl::scale(1/scale, 1/scale);
+	//ci::gl::color(ci::Color::black());
 
 	//if (_entities->size() > 0) {
 	//	const iGrid& pathMap = *(_map->getPathMap((*_entities)[0]->getNextDoor(1)));
@@ -83,7 +91,6 @@ void Display::draw() {
 	//	}
 	//}
 	
-	ci::gl::scale(scale, scale);
 	ci::gl::color(ci::Color(1, 0, 0));
 	for (EntityPtr entity : *_entities) {
 		ci::gl::pushModelMatrix();
@@ -92,6 +99,13 @@ void Display::draw() {
 		static glm::vec2 points[3] = { {-1.0, 1.0}, {-1.0, -1.0}, {1.0, 0.0} };
 		ci::gl::drawSolidTriangle(points);
 		ci::gl::popModelMatrix();
+
+		//ci::gl::scale(1 / scale, 1 / scale);
+		//ci::gl::color(ci::Color::black());
+		//ci::gl::Texture2dRef textTexture = ci::gl::Texture2d::create(tboxBase.text(std::to_string(entity->id)).render());
+		//glm::vec2 txtPos = (entity->getPos() * scale) - glm::vec2(tboxBase.getSize()) * 0.5f - glm::vec2(0, 10.0);
+		//ci::gl::draw(textTexture, txtPos);
+		//ci::gl::scale(scale, scale);
 
 		//ci::gl::drawSolidCircle(entity->getPos(), 1.0);
 	}
