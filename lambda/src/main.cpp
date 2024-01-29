@@ -21,12 +21,8 @@ FFMat R = FFMat::Zero();
 EntityStatePtr facialMatch(EntityStatePtr update, const std::vector<EntityStatePtr>& pool) {
 
     for (const EntityStatePtr &cmp : pool) {
-        float distance = 0.0;
 
-        // L2Norm
-        for (int j = 0; j < FACE_VEC_SIZE; j++) {
-            distance += pow(update->facialFeatures[j] - cmp->facialFeatures[j], 2);
-        }
+        double distance = l2Distance(update->facialFeatures, cmp->facialFeatures);
         
         // Bhattacharyya distance
         //std::unique_ptr<FFVec> diff = std::unique_ptr<FFVec>(new FFVec());

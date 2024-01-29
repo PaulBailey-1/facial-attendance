@@ -13,6 +13,8 @@ typedef unsigned char UCHAR;
 typedef Eigen::Matrix<float, FACE_VEC_SIZE, 1> FFVec;
 typedef Eigen::Matrix<float, FACE_VEC_SIZE, FACE_VEC_SIZE> FFMat;
 
+double l2Distance(const FFVec& first, const FFVec& second);
+
 class EntityState {
 public:
 

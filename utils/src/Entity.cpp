@@ -3,6 +3,14 @@
 
 #include "utils/EntityState.h"
 
+double l2Distance(const FFVec& first, const FFVec& second) {
+    float distance = 0.0;
+    for (int j = 0; j < FACE_VEC_SIZE; j++) {
+        distance += pow(first[j] - second[j], 2);
+    }
+    return distance;
+}
+
 void EntityState::kalmanUpdate(std::shared_ptr<EntityState> update) {
 
    // z measurement vector is update->facialFeatures
