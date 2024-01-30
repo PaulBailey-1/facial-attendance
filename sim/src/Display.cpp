@@ -63,18 +63,18 @@ void Display::draw() {
 
 	ci::gl::color(ci::Color(90/255.0, 65/255.0, 55/255.0));
 	for (const Door &door : _map->doors) {
-		//ci::gl::pushModelMatrix();
-		//ci::gl::translate(door.pos);
-		//ci::gl::rotate(door.angle * (M_PI / 180));
-		//ci::gl::drawSolidRect(ci::Rectf({ -DOOR_WIDTH / 2, -0.5 }, { DOOR_WIDTH / 2, 0.5 }));
-		//ci::gl::popModelMatrix();
+		ci::gl::pushModelMatrix();
+		ci::gl::translate(door.pos);
+		ci::gl::rotate(door.angle * (M_PI / 180));
+		ci::gl::drawSolidRect(ci::Rectf({ -DOOR_WIDTH / 2, -0.5 }, { DOOR_WIDTH / 2, 0.5 }));
+		ci::gl::popModelMatrix();
 
-		ci::gl::scale(1 / scale, 1 / scale);
-		ci::gl::color(ci::Color::black());
-		ci::gl::Texture2dRef textTexture = ci::gl::Texture2d::create(tboxBase.text(std::to_string(door.id)).render());
-		glm::vec2 txtPos = (door.pos * scale) - glm::vec2(tboxBase.getSize()) * 0.5f;
-		ci::gl::draw(textTexture, txtPos);
-		ci::gl::scale(scale, scale);
+		//ci::gl::scale(1 / scale, 1 / scale);
+		//ci::gl::color(ci::Color::black());
+		//ci::gl::Texture2dRef textTexture = ci::gl::Texture2d::create(tboxBase.text(std::to_string(door.id)).render());
+		//glm::vec2 txtPos = (door.pos * scale) - glm::vec2(tboxBase.getSize()) * 0.5f;
+		//ci::gl::draw(textTexture, txtPos);
+		//ci::gl::scale(scale, scale);
 
 	}
 

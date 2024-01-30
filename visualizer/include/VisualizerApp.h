@@ -21,6 +21,7 @@ public:
 	void setup() override;
 	void update() override;
 	void draw() override;
+	void cleanup() override;
 
 private:
 
@@ -31,10 +32,13 @@ private:
 
 	std::vector<Face> _faces;
 	FFMat _distances;
-	Eigen::Matrixxd _state;
-	Eigen::Matrixxd _stateGradient;
-	double _stepSize {0.1};
-	int _nDim;
+	Eigen::MatrixXd _state;
+	Eigen::MatrixXd _stateGradient;
+	double _stepSize {0.01};
+	int _nDim {0};
+	int _time { 0 };
+
+	std::ofstream _log;
 
 };
 
