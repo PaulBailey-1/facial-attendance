@@ -14,12 +14,12 @@ Simulation::Simulation() {
 
 	printf("Loading map ... ");
 
-	_map = Map("../../../../map.xml");
+	_map = Map("../../../map.xml");
 	_map.generatePathMaps();
 
 	printf("Done\n");
 
-	uploadDataSet("../../../../dataset.csv", 9, 12);
+	uploadDataSet("../../../dataset.csv", 9, 12);
 	_db.getEntities(_entities);
 	getSchedules();
 

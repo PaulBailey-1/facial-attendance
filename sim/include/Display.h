@@ -9,6 +9,7 @@
 
 #include <utils/Map.h>
 #include <utils/EntityState.h>
+#include <utils/DBConnection.h>
 
 #include "Device.h"
 
@@ -27,6 +28,7 @@ public:
 	}
 
 	void setup() override;
+	void update() override;
 	void draw() override;
 
 private:
@@ -35,6 +37,9 @@ private:
 
 	const Map* _map = nullptr;
 	const std::vector<EntityPtr>* _entities = nullptr;
+
+	DBConnection _db;
+	std::vector<ShortTermStatePtr> _shortTermStates;
 
 	ci::Font _font;
 

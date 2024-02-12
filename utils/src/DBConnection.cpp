@@ -127,7 +127,7 @@ void DBConnection::createTables() {
 }
 
 void DBConnection::clearTables() {
-    printf("Checking tables ... ");
+    printf("Clearing tables ... ");
     boost::mysql::results r;
 	query("SET FOREIGN_KEY_CHECKS = 0", r);
     query("TRUNCATE attendance", r);
@@ -296,16 +296,16 @@ LongTermStatePtr DBConnection::getLongTermState(int id) {
     return nullptr;
 }
 
-void DBConnection::getLongTermStates(std::vector<EntityStatePtr> &states) {
+void DBConnection::getLongTermStates(std::vector<LongTermStatePtr> &states) {
     printf("Fetching long term states ... ");
     boost::mysql::results result;
     query("SELECT id, mean_facial_features, cov_facial_features FROM long_term_states ORDER BY id ASC", result);
     if (!result.empty()) {
         for (const boost::mysql::row_view& row : result.rows()) {
             if (row[3].is_int64()) {
-                states.push_back(EntityStatePtr(new LongTermState(row[0].as_int64(), row[1].as_blob(), row[2].as_blob(), row[3].as_int64())));
+                states.push_back(LongTermStatePtr(new LongTermState(row[0].as_int64(), row[1].as_blob(), row[2].as_blob(), row[3].as_int64())));
             }
-            states.push_back(EntityStatePtr(new LongTermState(row[0].as_int64(), row[1].as_blob(), row[2].as_blob())));
+            states.push_back(LongTermStatePtr(new LongTermState(row[0].as_int64(), row[1].as_blob(), row[2].as_blob())));
         }
     }
     printf("Done\n");
@@ -365,20 +365,34 @@ void DBConnection::setLongTermStateStudent(LongTermStatePtr lts) {
     }
 }
 
-void DBConnection::getShortTermStates(std::vector<EntityStatePtr> &states) {
-    printf("Fetching short term states ... ");
+void DBConnection::getShortTermStates(std::vector<ShortTermStatePtr> &states, bool small) {
     boost::mysql::results result;
-    query("SELECT id, mean_facial_features, cov_facial_features, update_count, last_update_device_id, long_term_state_key FROM short_term_states ORDER BY id ASC", result);
-    if (!result.empty()) {
-        for (const boost::mysql::row_view& row : result.rows()) {
-            if (row[5].is_int64()) {
-                states.push_back(EntityStatePtr(new ShortTermState(row[0].as_int64(), row[1].as_blob(), row[2].as_blob(), row[3].as_int64(), row[4].as_int64(), row[5].as_int64())));
-            } else {
-                states.push_back(EntityStatePtr(new ShortTermState(row[0].as_int64(), row[1].as_blob(), row[2].as_blob(), row[3].as_int64(), row[4].as_int64())));
+    if (!small) {
+        printf("Fetching short term states ... ");
+        query("SELECT id, mean_facial_features, cov_facial_features, update_count, last_update_device_id, long_term_state_key FROM short_term_states ORDER BY id ASC", result);
+        if (!result.empty()) {
+            for (const boost::mysql::row_view& row : result.rows()) {
+                if (row[5].is_int64()) {
+                    states.push_back(ShortTermStatePtr(new ShortTermState(row[0].as_int64(), row[1].as_blob(), row[2].as_blob(), row[3].as_int64(), row[4].as_int64(), row[5].as_int64())));
+                } else {
+                    states.push_back(ShortTermStatePtr(new ShortTermState(row[0].as_int64(), row[1].as_blob(), row[2].as_blob(), row[3].as_int64(), row[4].as_int64())));
+                }
             }
         }
+        printf("Done\n");
+    } else {
+        query("SELECT id, update_count, last_update_device_id, long_term_state_key FROM short_term_states ORDER BY id ASC", result);
+        if (!result.empty()) {
+            for (const boost::mysql::row_view& row : result.rows()) {
+                if (row[3].is_int64()) {
+                    states.push_back(ShortTermStatePtr(new ShortTermState(row[0].as_int64(), row[1].as_int64(), row[2].as_int64(), row[3].as_int64())));
+                } else {
+                    states.push_back(ShortTermStatePtr(new ShortTermState(row[0].as_int64(), row[1].as_int64(), row[2].as_int64())));
+                }
+            }
+        }
+
     }
-    printf("Done\n");
 }
 
 void DBConnection::getLinkedLongTermStateIds(std::set<int>& ids) {
@@ -406,7 +420,7 @@ ShortTermStatePtr DBConnection::getLastShortTermState(int ltsId) {
             return ShortTermStatePtr(new ShortTermState(row[0].as_int64(), row[1].as_blob(), row[2].as_blob(), row[3].as_int64(), row[4].as_int64(), row[5].as_int64()));
         }
     }
-    
+    return nullptr;
 }
 
 int DBConnection::createShortTermState(UpdateCPtr update, LongTermStatePtr ltState) {

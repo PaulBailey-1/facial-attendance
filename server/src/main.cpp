@@ -124,7 +124,7 @@ int main() {
     db.createTables();
 
     printf("Loading map ... ");
-    Map map("../../../../map.xml");
+    Map map("../../../map.xml");
     printf("Done\nMatching doors and devices ... ");
     std::vector<std::set<int>> doorDevsMatches;
     map.generatePathMaps(doorDevsMatches);

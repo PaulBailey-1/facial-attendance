@@ -1,3 +1,4 @@
+#include<algorithm>
 
 #include "utils/Map.h"
 
@@ -32,6 +33,7 @@ Map::Map(std::string filename) {
 		float angle = child->getAttributeValue<float>("direction");
 		devs.push_back(DeviceView( id, {x, y}, angle));
 	}
+    std::sort(devs.begin(), devs.end(), [](const DeviceView& a, const DeviceView& b) {return a.id < b.id;});
 	for (ci::XmlTree::Iter child = map.begin("door"); child != map.end(); ++child) {
 		int id = child->getAttributeValue<int>("id");
 		float x = child->getAttributeValue<float>("x");

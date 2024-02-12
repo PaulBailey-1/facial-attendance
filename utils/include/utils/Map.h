@@ -27,6 +27,10 @@ struct DeviceView {
 
 	DeviceView(int id_, glm::vec2 pos_, float angle_);
 
+	bool operator=(const DeviceView& other) {
+		return id == other.id;
+	}
+
 };
 class Map {
 public:

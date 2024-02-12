@@ -18,9 +18,9 @@ DBConnection db;
 
 FFMat R = FFMat::Zero();
 
-EntityStatePtr facialMatch(EntityStatePtr update, const std::vector<EntityStatePtr>& pool) {
+void getFacialMatches(UpdatePtr update, const std::vector<ShortTermStatePtr>& pool, std::vector<ShortTermStatePtr>& matches, std::vector<double>& matchDistances) {
 
-    for (const EntityStatePtr &cmp : pool) {
+    for (const ShortTermStatePtr &cmp : pool) {
 
         double distance = l2Distance(update->facialFeatures, cmp->facialFeatures);
         
@@ -28,85 +28,88 @@ EntityStatePtr facialMatch(EntityStatePtr update, const std::vector<EntityStateP
         //std::unique_ptr<FFVec> diff = std::unique_ptr<FFVec>(new FFVec());
         //std::unique_ptr<FFMat> sigma = std::unique_ptr<FFMat>(new FFMat());
         //*diff = update->facialFeatures - cmp->facialFeatures;
-        //*sigma = (update->getFacialFeaturesCov() + cmp->facialFeaturesCov) / 2;
-        //distance = float(diff->transpose() * sigma->inverse() * *diff) / 8 + log(sigma->determinant() / sqrt(update->getFacialFeaturesCov().determinant() * cmp->facialFeaturesCov.determinant())) / 2;
+        //*sigma = (update->facialFeaturesCov + cmp->facialFeaturesCov) / 2;
+        //distance = float(diff->transpose() * sigma->inverse() * *diff) / 8 + log(sigma->determinant() / sqrt(update->facialFeaturesCov.determinant() * cmp->facialFeaturesCov.determinant())) / 2;
 
         fmt::println("Matching update {} to state {} with distance {}", update->id, cmp->id, distance);
         if (distance < MATCHING_THRESH) {
-            return cmp;
+            matches.push_back(cmp);
+            matchDistances.push_back(distance);
         }
     }
-    return nullptr;
 }
 
 void processUpdate(UpdatePtr update) {
 
     fmt::print("Proccessing update {} from device {}\n", update->id, update->deviceId);
 
-    EntityStatePtr updateState = std::static_pointer_cast<EntityState>(update);
-    EntityStatePtr match = nullptr;
+    // EntityStatePtr updateState = std::static_pointer_cast<EntityState>(update);
 
-    std::vector<EntityStatePtr> shortTermStates;
+    std::vector<ShortTermStatePtr> shortTermStates;
     db.getShortTermStates(shortTermStates);
 
-    std::vector<EntityStatePtr> longTermStates;
+    std::vector<LongTermStatePtr> longTermStates;
     db.getLongTermStates(longTermStates);
 
+    std::vector<ShortTermStatePtr> matches;
+    std::vector<double> matchDistances;
     // TODO
     // match against who is probably there
     // match against who could be there
 
     // match against people seen
-    match = facialMatch(updateState, shortTermStates);
+    getFacialMatches(update, shortTermStates, matches, matchDistances);
 
-    if (match != nullptr) {
-
-        fmt::print("Match found in short term states\n");
+    fmt::println("Found {} matches in short term states", matches.size());
+    for (int i = 0; i < matches.size(); i++) { 
+        ShortTermStatePtr match = matches[i];
 
         //if matched to short term, apply update, match to long term
-        ShortTermStatePtr stMatch = std::static_pointer_cast<ShortTermState>(match);
-  
-        stMatch->lastUpdateDeviceId = update->deviceId;
-        stMatch->kalmanUpdate(update);
+        match->lastUpdateDeviceId = update->deviceId;
+        double distance = matchDistances[i];
+        // update->facialFeaturesCov = R * distance; // todo func
+        update->facialFeaturesCov = R;
+        match->kalmanUpdate(update);
 
-        fmt::println("Rematching sts {} to long term states", stMatch->id);
-        LongTermStatePtr ltMatch = std::static_pointer_cast<LongTermState>(facialMatch(stMatch, longTermStates));
-        if (ltMatch != nullptr) {
-            stMatch->longTermStateKey = ltMatch->id;
-        }
+        // fmt::println("Rematching sts {} to long term states", match->id);
+        // LongTermStatePtr ltMatch = std::static_pointer_cast<LongTermState>(facialMatch(match, longTermStates));
+        // if (ltMatch != nullptr) {
+        //     match->longTermStateKey = ltMatch->id;
+        // }
 
-        update->shortTermStateId = stMatch->id;
-        stMatch->updateCount++;
-        db.updateShortTermState(stMatch);
-        
-    } else {
-        // match against people known
-        // may not want to do this exclusion
-        std::vector<EntityStatePtr> newPool;
-        std::sort(shortTermStates.begin(), shortTermStates.end(),
-            [] (const EntityStatePtr& a, const EntityStatePtr& b) {
-                return std::static_pointer_cast<ShortTermState>(a)->longTermStateKey < std::static_pointer_cast<ShortTermState>(b)->longTermStateKey;
-        });
-        std::set_difference(longTermStates.begin(), longTermStates.end(), shortTermStates.begin(), shortTermStates.end(), std::back_inserter(newPool), 
-            [](const EntityStatePtr& a, const EntityStatePtr& b) {
-                return std::static_pointer_cast<LongTermState>(a)->id < std::static_pointer_cast<ShortTermState>(b)->longTermStateKey;
-        });
-        match = facialMatch(updateState, newPool);
-
-        // if matched to long term, create short term matched to long term
-        if (match != nullptr) {
-            fmt::print("Match found in long term states\n");
-            update->shortTermStateId = db.createShortTermState(update, std::static_pointer_cast<LongTermState>(match));
-        }
+        // update->shortTermStateId = match->id;
+        match->updateCount++;
+        db.updateShortTermState(match);
     }
 
-    if (match == nullptr) {
+    // } else {
+    //     // match against people known
+    //     // may not want to do this exclusion
+    //     std::vector<EntityStatePtr> newPool;
+    //     std::sort(shortTermStates.begin(), shortTermStates.end(),
+    //         [] (const EntityStatePtr& a, const EntityStatePtr& b) {
+    //             return std::static_pointer_cast<ShortTermState>(a)->longTermStateKey < std::static_pointer_cast<ShortTermState>(b)->longTermStateKey;
+    //     });
+    //     std::set_difference(longTermStates.begin(), longTermStates.end(), shortTermStates.begin(), shortTermStates.end(), std::back_inserter(newPool), 
+    //         [](const EntityStatePtr& a, const EntityStatePtr& b) {
+    //             return std::static_pointer_cast<LongTermState>(a)->id < std::static_pointer_cast<ShortTermState>(b)->longTermStateKey;
+    //     });
+    //     match = facialMatch(updateState, newPool);
+
+    //     // if matched to long term, create short term matched to long term
+    //     if (match != nullptr) {
+    //         fmt::print("Match found in long term states\n");
+    //         update->shortTermStateId = db.createShortTermState(update, std::static_pointer_cast<LongTermState>(match));
+    //     }
+    // }
+
+    if (matches.size() == 0) {
         fmt::print("No match found\n");
         update->shortTermStateId = db.createShortTermState(update);
     }
 
     db.removePreviousUpdates(update);
-    db.updateUpdate(update);
+    // db.updateUpdate(update);
 }
 
 void loadUpdateCov(std::string filename) {
@@ -138,7 +141,6 @@ void loadUpdateCov(std::string filename) {
                 throw std::runtime_error("invalid row dimension\n");
             }
         }
-        Update::defaultCov = &R;
         printf("Done\n");
     }
     catch (const std::exception& err) {
@@ -151,7 +153,7 @@ int main() {
     db.connect();
     //db.createTables();
     
-    loadUpdateCov("../../../../updateCov.csv");
+    loadUpdateCov("../../../updateCov.csv");
 
     std::vector<UpdatePtr> updates;
     printf("Checking for new updates... \n");

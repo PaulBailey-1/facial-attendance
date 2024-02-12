@@ -6,19 +6,20 @@
 double l2Distance(const FFVec& first, const FFVec& second) {
     float distance = 0.0;
     for (int j = 0; j < FACE_VEC_SIZE; j++) {
-        distance += pow(first[j] - second[j], 2);
+        double diff = first[j] - second[j];
+        distance += diff * diff;
     }
     return distance;
 }
 
-void EntityState::kalmanUpdate(std::shared_ptr<EntityState> update) {
+void EntityState::kalmanUpdate(UpdatePtr update) {
 
    // z measurement vector is update->facialFeatures
    // H is identity
 
    static FFMat I = FFMat::Identity();
    static FFMat* K = new FFMat();
-   *K = facialFeaturesCov * (facialFeaturesCov + *update->getFacialFeaturesCov()).inverse();
+   *K = facialFeaturesCov * (facialFeaturesCov + update->facialFeaturesCov).inverse();
 
    facialFeatures += *K * (update->facialFeatures - facialFeatures);
    facialFeaturesCov = (I - *K) * facialFeaturesCov;

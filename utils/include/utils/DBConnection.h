@@ -33,12 +33,12 @@ public:
     void clearUpdates();
 
     LongTermStatePtr getLongTermState(int id);
-    void getLongTermStates(std::vector<EntityStatePtr>& states);
+    void getLongTermStates(std::vector<LongTermStatePtr>& states);
     int createLongTermState(ShortTermStatePtr sts);
     void updateLongTermState(LongTermStatePtr lts);
     void setLongTermStateStudent(LongTermStatePtr lts);
 
-    void getShortTermStates(std::vector<EntityStatePtr>& states);
+    void getShortTermStates(std::vector<ShortTermStatePtr>& states, bool small = false);
     void getLinkedLongTermStateIds(std::set<int>& ids);
     ShortTermStatePtr getLastShortTermState(int ltsId);
     int createShortTermState(UpdateCPtr update, LongTermStatePtr ltState = nullptr);

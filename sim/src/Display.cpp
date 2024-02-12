@@ -27,6 +27,20 @@ Display* Display::start() {
 
 void Display::setup() {
 	_font = ci::Font("Times New Roman", 18);
+
+	_db.connect();
+
+}
+
+void Display::update() {
+
+	static int limiter = 0;
+
+	if (limiter == 5) {
+		limiter = 0;
+		_db.getShortTermStates(_shortTermStates, true);
+	}
+	limiter++;
 }
 
 void Display::draw() {
@@ -63,11 +77,10 @@ void Display::draw() {
 
 	ci::gl::color(ci::Color(90/255.0, 65/255.0, 55/255.0));
 	for (const Door &door : _map->doors) {
-		ci::gl::pushModelMatrix();
+		ci::gl::ScopedModelMatrix model;
 		ci::gl::translate(door.pos);
 		ci::gl::rotate(door.angle * (M_PI / 180));
 		ci::gl::drawSolidRect(ci::Rectf({ -DOOR_WIDTH / 2, -0.5 }, { DOOR_WIDTH / 2, 0.5 }));
-		ci::gl::popModelMatrix();
 
 		//ci::gl::scale(1 / scale, 1 / scale);
 		//ci::gl::color(ci::Color::black());
@@ -91,14 +104,13 @@ void Display::draw() {
 	//	}
 	//}
 	
-	ci::gl::color(ci::Color(1, 0, 0));
 	for (EntityPtr entity : *_entities) {
-		ci::gl::pushModelMatrix();
+		ci::gl::ScopedModelMatrix model;
+		ci::gl::color(ci::Color(ci::CM_HSV, entity->id / (double) _entities->size(), 1.0, 1.0));
 		ci::gl::translate(entity->getPos());
 		ci::gl::rotate(entity->getHeading());
 		static glm::vec2 points[3] = { {-1.0, 1.0}, {-1.0, -1.0}, {1.0, 0.0} };
 		ci::gl::drawSolidTriangle(points);
-		ci::gl::popModelMatrix();
 
 		//ci::gl::scale(1 / scale, 1 / scale);
 		//ci::gl::color(ci::Color::black());
@@ -108,6 +120,18 @@ void Display::draw() {
 		//ci::gl::scale(scale, scale);
 
 		//ci::gl::drawSolidCircle(entity->getPos(), 1.0);
+	}
+
+	for (ShortTermStatePtr sts : _shortTermStates) {
+		ci::gl::ScopedModelMatrix model;
+		if (sts->longTermStateKey == -1) {
+			ci::gl::color(ci::Color::black());
+		} else {
+			ci::gl::color(ci::Color(ci::CM_HSV, sts->longTermStateKey / 15.0, 1.0, 1.0));
+		}
+		ci::gl::translate(_map->devs[sts->lastUpdateDeviceId].pos);
+		ci::gl::drawLine({-1.0, 0.0}, {1.0, 0.0});
+		ci::gl::drawLine({0.0, 1.0}, {0.0, -1.0});
 	}
 
 }

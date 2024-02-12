@@ -15,12 +15,18 @@ typedef Eigen::Matrix<float, FACE_VEC_SIZE, FACE_VEC_SIZE> FFMat;
 
 double l2Distance(const FFVec& first, const FFVec& second);
 
+class Update;
+
 class EntityState {
 public:
 
 	int id;
 	FFVec facialFeatures;
 	FFMat facialFeaturesCov;
+
+	EntityState(int id_) {
+		id = id_;
+	}
 
 	EntityState(int id_, boost::span<const UCHAR> facialFeatures_) {
 		id = id_;
@@ -36,9 +42,8 @@ public:
 		memcpy(facialFeatures.data(), facialFeatures_.data(), facialFeatures_.size_bytes());
 	}
 	virtual const boost::span<UCHAR> getFacialFeaturesCovSpan() const { return boost::span<UCHAR>(reinterpret_cast<UCHAR*>(const_cast<float*>(facialFeaturesCov.data())), facialFeaturesCov.size() * sizeof(float)); }
-	virtual FFMat* getFacialFeaturesCov() { return &facialFeaturesCov; }
 
-	void kalmanUpdate(std::shared_ptr<EntityState> update);
+	void kalmanUpdate(std::shared_ptr<Update> update);
 
 	friend bool operator < (const EntityState& a, const EntityState& b) {
 		return a.id < b.id;
@@ -51,11 +56,11 @@ public:
 
 	std::vector<int> schedule;
 
-	Entity() : EntityState(0, boost::span<const UCHAR>()) {}
+	Entity() : EntityState(0) {}
 
-	Entity(int id) : EntityState(id, boost::span<const UCHAR>()) {}
+	Entity(int id) : EntityState(id) {}
 
-	Entity(int id, std::vector<int> schedule_) : EntityState(id, boost::span<const UCHAR>()) {
+	Entity(int id, std::vector<int> schedule_) : EntityState(id) {
 		schedule = schedule_;
 	}
 
@@ -79,23 +84,21 @@ private:
 class Update : public EntityState {
 public:
 
-	inline static FFMat* defaultCov = nullptr;
-
 	int deviceId;
 	int shortTermStateId;
 	int period;
 
-	Update(int id_, int device_id_, boost::span<const UCHAR> facialFeatures_) : EntityState(id_, facialFeatures_) {
-		deviceId = device_id_;
+	Update(int id_, int deviceId_, boost::span<const UCHAR> facialFeatures_) : EntityState(id_, facialFeatures_) {
+		deviceId = deviceId_;
 		shortTermStateId = -1;
 		period = -1;
 	}
 	
-	Update(int id_, int deviceId_) : Update(id_, deviceId_, boost::span<const UCHAR>()) {}
-
-	FFMat* getFacialFeaturesCov() { return defaultCov; }
-	const boost::span<UCHAR> getFacialFeaturesCovSpan() const { return boost::span<UCHAR>(reinterpret_cast<UCHAR*>(const_cast<float*>(defaultCov->data())), defaultCov->size() * sizeof(float)); }
-
+	Update(int id_, int deviceId_) : EntityState(id_) {
+		deviceId = deviceId_;
+		shortTermStateId = -1;
+		period = -1;
+	}
 };
 
 class LongTermState : public EntityState {
@@ -108,9 +111,13 @@ public:
 		studentId = studentId_;
 	}
 
-	LongTermState(int id_, boost::span<const UCHAR> facialFeatures_, boost::span<const UCHAR> facialFeaturesCov_) : LongTermState(id_, facialFeatures_, facialFeaturesCov_, -1) {}
+	LongTermState(int id_, boost::span<const UCHAR> facialFeatures_, boost::span<const UCHAR> facialFeaturesCov_) : EntityState(id_, facialFeatures_, facialFeaturesCov_) {
+		studentId = -1;
+	}
 
-	LongTermState(int id_) : LongTermState(id_, boost::span<const UCHAR>(), boost::span<const UCHAR>(), -1) {}
+	LongTermState(int id_) : EntityState(id_) {
+		studentId = -1;
+	}
 
 };
 
@@ -128,7 +135,23 @@ public:
 		updateCount = updateCount_;
 	}
 
-	ShortTermState(int id_, boost::span<const UCHAR> facialFeatures_, boost::span<const UCHAR> facialFeaturesCov_, int updateCount_, int lastUpdateDeviceId_) : ShortTermState(id_, facialFeatures_, facialFeaturesCov_, updateCount_, lastUpdateDeviceId_, -1) {}
+	ShortTermState(int id_, boost::span<const UCHAR> facialFeatures_, boost::span<const UCHAR> facialFeaturesCov_, int updateCount_, int lastUpdateDeviceId_) : EntityState(id_, facialFeatures_, facialFeaturesCov_) {
+		lastUpdateDeviceId = lastUpdateDeviceId_;
+		longTermStateKey = -1;
+		updateCount = updateCount_;
+	}
+
+	ShortTermState(int id_, int updateCount_, int lastUpdateDeviceId_, int longTermStateKey_) : EntityState(id_) {
+		lastUpdateDeviceId = lastUpdateDeviceId_;
+		longTermStateKey = longTermStateKey_;
+		updateCount = updateCount_;
+	}
+
+	ShortTermState(int id_, int updateCount_, int lastUpdateDeviceId_) : EntityState(id_) {
+		lastUpdateDeviceId = lastUpdateDeviceId_;
+		longTermStateKey = -1;
+		updateCount = updateCount_;
+	}
 };
 
 typedef std::shared_ptr<EntityState> EntityStatePtr;
