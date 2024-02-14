@@ -11,6 +11,7 @@
 
 #include <utils/DBConnection.h>
 #include <utils/EntityState.h>
+#include <utils/PathGraph.h>
 
 #define MATCHING_THRESH 130.0
 
@@ -64,9 +65,12 @@ void processUpdate(UpdatePtr update) {
     for (int i = 0; i < matches.size(); i++) { 
         ShortTermStatePtr match = matches[i];
 
-        //if matched to short term, apply update, match to long term
+        //if matched to short term, apply update
+        if (match->lastUpdateDeviceId != -1) {
+            
+        }
         match->lastUpdateDeviceId = update->deviceId;
-        double distance = matchDistances[i];
+        // double distance = matchDistances[i];
         // update->facialFeaturesCov = R * distance; // todo func
         update->facialFeaturesCov = R;
         match->kalmanUpdate(update);
@@ -77,9 +81,15 @@ void processUpdate(UpdatePtr update) {
         //     match->longTermStateKey = ltMatch->id;
         // }
 
+
+
         // update->shortTermStateId = match->id;
         match->updateCount++;
         db.updateShortTermState(match);
+
+        double weight = 1 - (matchDistances[i] / MATCHING_THRESH); // 0 to 1
+        db.createParticle(match, update, weight);
+
     }
 
     // } else {
@@ -154,6 +164,8 @@ int main() {
     //db.createTables();
     
     loadUpdateCov("../../../updateCov.csv");
+
+    PathMap::initGraph("../../../map.xml", "pathGraph.csv");
 
     std::vector<UpdatePtr> updates;
     printf("Checking for new updates... \n");

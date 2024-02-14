@@ -106,12 +106,10 @@ void DBConnection::createTables() {
         update_count INT, \
         last_update_device_id INT NOT NULL, \
         last_update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, \
-        expected_next_update_device_id INT, \
-        expected_next_update_time TIMESTAMP NULL DEFAULT NULL, \
-        expected_next_update_time_variance FLOAT(0), \
+        paths BLOB({}), \
         long_term_state_key INT, \
         CONSTRAINT FK_lts FOREIGN KEY (long_term_state_key) REFERENCES long_term_states(id) \
-    )", face_bytes, face_cov_bytes).c_str(), r);
+    )", face_bytes, face_cov_bytes, path_bytes, path_cov_bytes).c_str(), r);
     query(fmt::format("CREATE TABLE IF NOT EXISTS updates (\
         id INT AUTO_INCREMENT PRIMARY KEY, \
         device_id INT, \
@@ -121,6 +119,13 @@ void DBConnection::createTables() {
         short_term_state_id INT, \
         CONSTRAINT FK_sts FOREIGN KEY (short_term_state_id) REFERENCES short_term_states(id)\
     )", face_bytes).c_str(), r);
+    query("CREATE TABLE IF NOT EXISTS particles (\
+        id INT AUTO_INCREMENT PRIMARY KEY, \
+        origin_device_id INT, \
+        short_term_state_id INT, \
+        weight FLOAT, \
+        CONSTRAINT FK_sts2 FOREIGN KEY (short_term_state_id) REFERENCES short_term_states(id)\
+    )", r);
 
     printf("Done\n");
 
@@ -136,6 +141,7 @@ void DBConnection::clearTables() {
     query("TRUNCATE short_term_states", r);
     query("TRUNCATE students", r);
     query("TRUNCATE updates", r);
+    query("TRUNCATE particles", r);
     query("TRUNCATE schedules", r);
 	query("SET FOREIGN_KEY_CHECKS = 1", r);
     printf("Done\n");
@@ -273,6 +279,21 @@ void DBConnection::clearUpdates() {
     boost::mysql::results result;
     query("DELETE FROM updates", result);
     printf("Done\n");
+}
+
+void DBConnection::createParticle(ShortTermStatePtr sts, UpdatePtr update, double weight) {
+    try {
+    fmt::println("Creating particle for sts {} on device {}", sts->id, update->deviceId);
+        boost::mysql::results result;
+        _conn.execute(_conn.prepare_statement(
+            "INSERT INTO particles (origin_device_id, short_term_state_id, weight) VALUES(?,?,?)"
+        ).bind(update->deviceId, sts->id, weight), result);
+        printf("Done\n");
+    }
+    catch (const boost::mysql::error_with_diagnostics& err) {
+        std::cerr << "Error: " << err.what() << '\n'
+            << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
+    }
 }
 
 LongTermStatePtr DBConnection::getLongTermState(int id) {

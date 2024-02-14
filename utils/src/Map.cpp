@@ -20,6 +20,9 @@ DeviceView::DeviceView(int id_, glm::vec2 pos_, float angle_) {
 }
 
 Map::Map(std::string filename) {
+
+    fmt::print("Loading map from {} ...", filename);
+
 	ci::XmlTree doc(ci::loadFile(filename));
 	ci::XmlTree map = doc.getChild("map");
 	size.x = map.getAttributeValue<float>("width");
@@ -41,6 +44,8 @@ Map::Map(std::string filename) {
 		float angle = child->getAttributeValue<float>("angle");
 		doors.push_back(Door{ id, {x, y}, angle });
 	}
+
+    printf("Done\n");
 }
 
 ci::Shape2d Map::makeRect(glm::vec2 topLeft, float width, float height) {
@@ -74,6 +79,15 @@ void Map::generatePathMaps(std::vector<std::set<int>>& matches) {
         } else {
             createPathMap(_pathMaps.back(), door.pos);
         }
+	}
+}
+
+void Map::getDeviceConnections(std::vector<std::set<int>>& conns) {
+	for (DeviceView dev : devs) {
+        std::set<int> connectedDevs;
+        iGrid pathMap = iGrid();
+        createPathMap(pathMap, dev.pos, connectedDevs);
+        conns.push_back(connectedDevs);
 	}
 }
 
