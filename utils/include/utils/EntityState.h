@@ -173,3 +173,9 @@ struct Schedule {
 	int studentId;
 	std::vector<int> rooms;
 };
+
+struct Particle {
+	int originDeviceId;
+	int shortTermStateId;
+	float weight;
+};

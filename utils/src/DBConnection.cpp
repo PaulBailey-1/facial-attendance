@@ -91,7 +91,6 @@ void DBConnection::createTables() {
 
     const int face_bytes = FACE_VEC_SIZE * 4;
     const int face_cov_bytes = FACE_VEC_SIZE * FACE_VEC_SIZE * 4;
-    // needs expected dts between devs for periods
     query(fmt::format("CREATE TABLE IF NOT EXISTS long_term_states (\
         id INT AUTO_INCREMENT PRIMARY KEY, \
         mean_facial_features BLOB({}), \
@@ -301,6 +300,20 @@ void DBConnection::createParticle(ShortTermStatePtr sts, UpdatePtr update, doubl
     catch (const boost::mysql::error_with_diagnostics& err) {
         std::cerr << "Error: " << err.what() << '\n'
             << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
+    }
+}
+
+void DBConnection::getParticles(std::vector<Particle>& particles) {
+    boost::mysql::results result;
+    query("SELECT origin_device_id, short_term_state_key, weight FROM particles", result);
+    if (!result.empty()) {
+        for (const boost::mysql::row_view& row : result.rows()) {
+            Particle particle;
+            particle.originDeviceId = row[0].as_int64();
+            particle.shortTermStateId = row[1].as_int64();
+            particle.weight = row[2].as_float();
+            particles.push_back(particle);
+        }
     }
 }
 

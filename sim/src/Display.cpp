@@ -38,7 +38,10 @@ void Display::update() {
 
 	if (limiter == 5) {
 		limiter = 0;
-		_db.getShortTermStates(_shortTermStates, true);
+		// _shortTermStates.clear();
+		// _db.getShortTermStates(_shortTermStates, true);
+		_particles.clear();
+		_db.getParticles(_particles);
 	}
 	limiter++;
 }
@@ -122,16 +125,21 @@ void Display::draw() {
 		//ci::gl::drawSolidCircle(entity->getPos(), 1.0);
 	}
 
-	for (ShortTermStatePtr sts : _shortTermStates) {
-		ci::gl::ScopedModelMatrix model;
-		if (sts->longTermStateKey == -1) {
-			ci::gl::color(ci::Color::black());
-		} else {
-			ci::gl::color(ci::Color(ci::CM_HSV, sts->longTermStateKey / 15.0, 1.0, 1.0));
-		}
-		ci::gl::translate(_map->devs[sts->lastUpdateDeviceId].pos);
-		ci::gl::drawLine({-1.0, 0.0}, {1.0, 0.0});
-		ci::gl::drawLine({0.0, 1.0}, {0.0, -1.0});
+	// for (ShortTermStatePtr sts : _shortTermStates) {
+	// 	ci::gl::ScopedModelMatrix model;
+	// 	if (sts->longTermStateKey == -1) {
+	// 		ci::gl::color(ci::Color::black());
+	// 	} else {
+	// 		ci::gl::color(ci::Color(ci::CM_HSV, sts->longTermStateKey / 15.0, 1.0, 1.0));
+	// 	}
+	// 	ci::gl::translate(_map->devs[sts->lastUpdateDeviceId].pos);
+	// 	ci::gl::drawLine({-1.0, 0.0}, {1.0, 0.0});
+	// 	ci::gl::drawLine({0.0, 1.0}, {0.0, -1.0});
+	// }
+
+	for (Particle par : _particles) {
+		ci::gl::color(ci::Color(ci::CM_HSV, par.shortTermStateId / 20.0, par.weight, 1.0));
+		ci::gl::drawCircle(_map->devs[par.originDeviceId].pos, 1.0);
 	}
 
 }

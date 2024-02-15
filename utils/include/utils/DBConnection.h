@@ -34,6 +34,7 @@ public:
     void clearUpdates();
 
     void createParticle(ShortTermStatePtr sts, UpdatePtr update, double weight);
+    void getParticles(std::vector<Particle>& particles);
 
     LongTermStatePtr getLongTermState(int id);
     void getLongTermStates(std::vector<LongTermStatePtr>& states);
