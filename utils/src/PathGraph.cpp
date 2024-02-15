@@ -3,8 +3,19 @@
 
 std::vector<std::set<int>> _graph;
 
-PathGraph::PathGraph() {
+PathGraph::PathGraph(int stsId_, int period_, boost::span<const unsigned char> path) :
+    shortTermStateId(stsId_),
+    period(period_)
+{
+    if (_graph.size() == 0) {
+        printf("PathGraph::PathGraph - Error: PathGraph uninitlized");
+    }
 
+    if (path != nullptr) {
+	    memcpy(_depths.data(), path.data(), path.size_bytes());
+    } else {
+        _depths = Eigen::Vectorxf::Zero(_graph.size());
+    }
 }
 
 void PathGraph::initGraph(std::string mapPath, std::string cachePath) {
@@ -45,4 +56,15 @@ void PathGraph::initGraph(std::string mapPath, std::string cachePath) {
         }
         cacheIn.close();
     }
+}
+
+size_t PathGraph::getPathByteSize() {
+    if (_graph.size() == 0) {
+        printf("PathGraph:getPathByteSize - Error: PathGraph uninitalized\n");
+    }
+    return _graph.size() * sizeof(float);
+}
+
+void PathGraph::update(int lastNode, int nextNode) {
+    _depths[nextNode] = _depths[lastNode] - 1;
 }

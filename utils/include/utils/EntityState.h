@@ -130,8 +130,6 @@ public:
 	int longTermStateKey;
 	int updateCount;
 
-	std::vector<PathMap> paths;
-
 	ShortTermState(int id_, boost::span<const UCHAR> facialFeatures_, boost::span<const UCHAR> facialFeaturesCov_, int updateCount_, int lastUpdateDeviceId_, int longTermStateKey_) : EntityState(id_, facialFeatures_, facialFeaturesCov_) {
 		lastUpdateDeviceId = lastUpdateDeviceId_;
 		longTermStateKey = longTermStateKey_;

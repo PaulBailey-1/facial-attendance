@@ -8,6 +8,7 @@
 #include <boost/mysql/tcp_ssl.hpp>
 
 #include "EntityState.h"
+#include "PathGraph.h"
 
 class DBConnection {
 public:
@@ -46,6 +47,9 @@ public:
     int createShortTermState(UpdateCPtr update, LongTermStatePtr ltState = nullptr);
     void updateShortTermState(ShortTermStatePtr state);
     void clearShortTermStates();
+
+    PathGraphPtr getPath(ShortTermStatePtr sts, int period);
+    void updatePath(PathGraphPtr path);
 
     int getScheduledRoom(int studentId, int period);
     void getSchedules(std::vector<Schedule>& schedules);

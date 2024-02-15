@@ -46,6 +46,8 @@ void processUpdate(UpdatePtr update) {
 
     // EntityStatePtr updateState = std::static_pointer_cast<EntityState>(update);
 
+    int period = db.getPeriod();
+
     std::vector<ShortTermStatePtr> shortTermStates;
     db.getShortTermStates(shortTermStates);
 
@@ -67,8 +69,11 @@ void processUpdate(UpdatePtr update) {
 
         //if matched to short term, apply update
         if (match->lastUpdateDeviceId != -1) {
-            
+            PathGraphPtr path = db.getPath(match, period);
+            path->update(match->lastUpdateDeviceId, update->deviceId);
+            db.updatePath(path);
         }
+
         match->lastUpdateDeviceId = update->deviceId;
         // double distance = matchDistances[i];
         // update->facialFeaturesCov = R * distance; // todo func

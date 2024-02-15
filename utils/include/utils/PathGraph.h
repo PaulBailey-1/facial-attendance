@@ -5,20 +5,32 @@
 #include <set>
 #include <iostream>
 #include <fstream>
+#include <memory>
 
 #include "Map.h"
+
+typedef unsigned char UCHAR;
+typedef std::shared_ptr<PathGraph> PathGraphPtr
 
 class PathGraph {
 public:
 
-    PathGraph();
+    int shortTermStateId;
+    int period;
+
+    PathGraph(int stsId_, int period_, boost::span<const UCHAR> path = nullptr);
 
     static void initGraph(std::string mapPath, std::string cachePath);
+    static size_t getGraphByteSize();
 
+    void update(int lastNode, int nextNode);
+
+	const boost::span<UCHAR> getPathSpan() const { return boost::span<UCHAR>(reinterpret_cast<UCHAR*>(const_cast<float*>(_depth.data())), getPathByteSize()); }
+    
 private:
 
     static std::vector<std::set<int>> _graph;
 
-    Eigen::Vectorxd _depths;
+    Eigen::Vectorxf _depths;
 
 };

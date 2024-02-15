@@ -106,10 +106,9 @@ void DBConnection::createTables() {
         update_count INT, \
         last_update_device_id INT NOT NULL, \
         last_update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, \
-        paths BLOB({}), \
         long_term_state_key INT, \
         CONSTRAINT FK_lts FOREIGN KEY (long_term_state_key) REFERENCES long_term_states(id) \
-    )", face_bytes, face_cov_bytes, path_bytes, path_cov_bytes).c_str(), r);
+    )", face_bytes, face_cov_bytes).c_str(), r);
     query(fmt::format("CREATE TABLE IF NOT EXISTS updates (\
         id INT AUTO_INCREMENT PRIMARY KEY, \
         device_id INT, \
@@ -126,6 +125,14 @@ void DBConnection::createTables() {
         weight FLOAT, \
         CONSTRAINT FK_sts2 FOREIGN KEY (short_term_state_id) REFERENCES short_term_states(id)\
     )", r);
+    query(fmt::format("CREATE TABLE IF NOT EXISTS paths (\
+        id INT AUTO_INCREMENT PRIMARY KEY NOT NULL, \
+        path BLOB({}), \
+        period INT, \
+        short_term_state_key INT, \
+        CONSTRAINT FK_sts2 FOREIGN KEY (short_term_state_key) REFERENCES short_term_states(id), \
+        UNIQUE KEY path_uidx (period,short_term_state_key)\
+    )", PathGraph::getPathByteSize()).c_str(), r);
 
     printf("Done\n");
 
@@ -142,6 +149,7 @@ void DBConnection::clearTables() {
     query("TRUNCATE students", r);
     query("TRUNCATE updates", r);
     query("TRUNCATE particles", r);
+    query("TRUNCATE paths", r);
     query("TRUNCATE schedules", r);
 	query("SET FOREIGN_KEY_CHECKS = 1", r);
     printf("Done\n");
@@ -494,7 +502,42 @@ void DBConnection::clearShortTermStates() {
     boost::mysql::results result;
     query("DELETE FROM short_term_states", result);
     printf("Done\n");
+}
 
+PathGraphPtr DBConnection::getPath(ShortTermStatePtr sts, int period) {
+    try {
+        fmt::print("Gettting path for sts {} period {} ... ", sts->id, period);
+        boost::mysql::results result;
+        _conn.execute(_conn.prepare_statement(
+            "SELECT path FROM paths WHERE short_term_state_key=? AND period=?"
+        ).bind(sts->id, period), result);
+        printf("Done\n");
+        if (result.rows().size() > 0) {
+            return PathGraphPtr(new PathGraph(sts->id, period, result.rows()[0][0].as_blob()));
+        } else {
+            return PathGraphPtr(new PathGraph(sts->id, period));
+        }
+    }
+    catch (const boost::mysql::error_with_diagnostics& err) {
+        std::cerr << "Error: " << err.what() << '\n'
+            << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
+    }
+    return nullptr;
+}
+
+void DBConnection::updatePath(PathGraphPtr path) {
+    try {
+        printf("Updating path ... ");
+        boost::mysql::results result;
+        _conn.execute(_conn.prepare_statement(
+            "INSERT INTO paths (path, period, short_term_state_key) VALUES (?,?,?) ON DUPLICATE KEY UPDATE short_term_state_key=VALUES(short_term_state_key)"
+        ).bind(path->getPathSpan(), path->period, path->shortTermStateId), result);
+        printf("Done\n");
+    }
+    catch (const boost::mysql::error_with_diagnostics& err) {
+        std::cerr << "Error: " << err.what() << '\n'
+            << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
+    }
 }
 
 int DBConnection::getScheduledRoom(int studentId, int period) {
