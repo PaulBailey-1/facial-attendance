@@ -3,8 +3,9 @@
 
 std::vector<std::set<int>> _graph;
 
-PathGraph::PathGraph(int stsId_, int period_, boost::span<const unsigned char> path) :
+PathGraph::PathGraph(int stsId_, int ltsId_, int period_, boost::span<const unsigned char> path) :
     shortTermStateId(stsId_),
+    longTermStateId(ltsId_),
     period(period_)
 {
     if (_graph.size() == 0) {
@@ -67,4 +68,8 @@ size_t PathGraph::getPathByteSize() {
 
 void PathGraph::update(int lastNode, int nextNode) {
     _depths[nextNode] = _depths[lastNode] - 1;
+}
+
+void PathGraph::fuse(PathGraphPtr other) {
+    _depths += other->getDepths();
 }

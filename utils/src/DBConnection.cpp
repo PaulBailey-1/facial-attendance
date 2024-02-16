@@ -129,8 +129,10 @@ void DBConnection::createTables() {
         path BLOB({}), \
         period INT, \
         short_term_state_key INT, \
+        long_term_state_key INT, \
         CONSTRAINT FK_sts2 FOREIGN KEY (short_term_state_key) REFERENCES short_term_states(id), \
-        UNIQUE KEY path_uidx (period,short_term_state_key)\
+        CONSTRAINT FK_lts2 FOREIGN KEY (long_term_state_key) REFERENCES long_term_states(id), \
+        UNIQUE KEY path_uidx (period, short_term_state_key, long_term_state_key)\
     )", PathGraph::getPathByteSize()).c_str(), r);
 
     printf("Done\n");
@@ -526,9 +528,9 @@ PathGraphPtr DBConnection::getPath(ShortTermStatePtr sts, int period) {
         ).bind(sts->id, period), result);
         printf("Done\n");
         if (result.rows().size() > 0) {
-            return PathGraphPtr(new PathGraph(sts->id, period, result.rows()[0][0].as_blob()));
+            return PathGraphPtr(new PathGraph(sts->id, -1, period, result.rows()[0][0].as_blob()));
         } else {
-            return PathGraphPtr(new PathGraph(sts->id, period));
+            return PathGraphPtr(new PathGraph(sts->id, -1, period));
         }
     }
     catch (const boost::mysql::error_with_diagnostics& err) {
@@ -538,13 +540,70 @@ PathGraphPtr DBConnection::getPath(ShortTermStatePtr sts, int period) {
     return nullptr;
 }
 
+PathGraphPtr DBConnection::getPath(LongTermState lts, int period) {
+    try {
+        fmt::print("Gettting path for lts {} period {} ... ", lts->id, period);
+        boost::mysql::results result;
+        _conn.execute(_conn.prepare_statement(
+            "SELECT path FROM paths WHERE long_term_state_key=? AND period=?"
+        ).bind(lts->id, period), result);
+        printf("Done\n");
+        if (result.rows().size() > 0) {
+            return PathGraphPtr(new PathGraph(-1, lts->id, period, result.rows()[0][0].as_blob()));
+        } else {
+            return PathGraphPtr(new PathGraph(-1, lts->id, -period));
+        }
+    }
+    catch (const boost::mysql::error_with_diagnostics& err) {
+        std::cerr << "Error: " << err.what() << '\n'
+            << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
+    }
+    return nullptr;
+}
+
+void DBConnection::getPaths(ShortTermStatePtr sts, std::vector<PathGraphPtr> paths) {
+    boost::mysql::results result;
+    fmt::print("Fetching paths for sts {} ... ", sts->id);
+    _conn.execute(_conn.prepare_statement(
+        "SELECT period, path FROM paths WHERE short_term_state_key=?"
+    ).bind(sts->id), result);
+    if (!result.empty()) {
+        for (const boost::mysql::row_view& row : result.rows()) {
+            paths.push_back(PathGraphPtr(new PathGraphPtr(sts->id, -1, row[0].as_int64(), row[1].as_blob())));
+        }
+    }
+    printf("Done\n");
+}
+
+
 void DBConnection::updatePath(PathGraphPtr path) {
     try {
         printf("Updating path ... ");
         boost::mysql::results result;
+        if (path->shortTermStateId != -1) {
+            _conn.execute(_conn.prepare_statement(
+                "INSERT INTO paths (path, period, short_term_state_key) VALUES (?,?,?) ON DUPLICATE KEY UPDATE short_term_state_key=VALUES(short_term_state_key)"
+            ).bind(path->getPathSpan(), path->period, path->shortTermStateId), result);
+        } else if (path->longTermStateId != -1) {
+            _conn.execute(_conn.prepare_statement(
+                "INSERT INTO paths (path, period, long_term_state_key) VALUES (?,?,?) ON DUPLICATE KEY UPDATE long_term_state_key=VALUES(long_term_state_key)"
+            ).bind(path->getPathSpan(), path->period, path->longTermStateId), result);
+        }
+        printf("Done\n");
+    }
+    catch (const boost::mysql::error_with_diagnostics& err) {
+        std::cerr << "Error: " << err.what() << '\n'
+            << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
+    }
+}
+
+void DBConnection::copyPaths(ShortTermStatePtr sts, LongTermStatePtr lts) {
+    try {
+        fmt::print("Copying paths from sts {} to lts {} ... ", sts->id, lts->id);
+        boost::mysql::results result;
         _conn.execute(_conn.prepare_statement(
-            "INSERT INTO paths (path, period, short_term_state_key) VALUES (?,?,?) ON DUPLICATE KEY UPDATE short_term_state_key=VALUES(short_term_state_key)"
-        ).bind(path->getPathSpan(), path->period, path->shortTermStateId), result);
+            "INSERT INTO paths (path, period, long_term_state_key) SELECT path, period, ? FROM paths WHERE short_term_state_key=?"
+        ).bind(lts->id, sts->id), result);
         printf("Done\n");
     }
     catch (const boost::mysql::error_with_diagnostics& err) {

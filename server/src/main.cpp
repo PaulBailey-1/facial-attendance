@@ -81,11 +81,10 @@ void nextDay() {
 
     printf("\nRunning next day\n");
 
-    std::vector<EntityStatePtr> shortTermStates;
+    std::vector<ShortTermStatePtr> shortTermStates;
     db.getShortTermStates(shortTermStates);
 
-    for (EntityStatePtr& es : shortTermStates) {
-        ShortTermStatePtr sts = std::static_pointer_cast<ShortTermState>(es);
+    for (ShortTermStatePtr& sts : shortTermStates) {
         LongTermStatePtr lts = nullptr;
         if (sts->longTermStateKey != -1) {
 
@@ -99,12 +98,19 @@ void nextDay() {
 
             db.updateLongTermState(lts);
 
-        } else {
-            if (sts->updateCount > 2) {
-                fmt::println("Promoting sts {}", sts->id);
-                int ltsId = db.createLongTermState(sts);
-                lts = LongTermStatePtr(new LongTermState(ltsId)); 
+            std::vector<PathGraphPtr> stsPaths;
+            db.getPaths(sts, stsPaths);
+            for (PathGraphPtr path : stsPaths) {
+                PathGraphPtr ltsPath = db.getPath(lts, path->period);
+                ltsPath->fuse(path);
+                db.updatePath(ltsPath);
             }
+
+        } else {
+            fmt::println("Promoting sts {}", sts->id);
+            int ltsId = db.createLongTermState(sts);
+            lts = LongTermStatePtr(new LongTermState(ltsId)); 
+            db.copyPaths(sts, lts);
         }
 
         if (lts != nullptr && lts->studentId == -1) {
