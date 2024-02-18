@@ -170,7 +170,7 @@ int main() {
     
     loadUpdateCov("../../../updateCov.csv");
 
-    PathMap::initGraph("../../../map.xml", "pathGraph.csv");
+    // PathGraph::initGraph("../../../map.xml", "pathGraph.csv");
 
     std::vector<UpdatePtr> updates;
     printf("Checking for new updates... \n");

@@ -7,6 +7,9 @@
 #include <fstream>
 #include <memory>
 
+#include <boost/core/span.hpp>
+#include <Eigen/dense>
+
 #include "Map.h"
 
 typedef unsigned char UCHAR;
@@ -17,23 +20,23 @@ public:
     int longTermStateId;
     int period;
 
-    PathGraph(int stsId_, int ltsId_, int period_, boost::span<const UCHAR> path = nullptr);
+    PathGraph(int stsId_, int ltsId_, int period_, boost::span<const UCHAR> path = boost::span<const UCHAR>());
 
     static void initGraph(std::string mapPath, std::string cachePath);
-    static size_t getGraphByteSize();
+    static size_t getPathByteSize();
 
     void update(int lastNode, int nextNode);
     void fuse(std::shared_ptr<PathGraph> other);
 
-	const boost::span<UCHAR> getPathSpan() const { return boost::span<UCHAR>(reinterpret_cast<UCHAR*>(const_cast<float*>(_depth.data())), getPathByteSize()); }
-    const Eigen::Vectorxf& getDepths() const {return _depths;}
+	const boost::span<UCHAR> getPathSpan() const { return boost::span<UCHAR>(reinterpret_cast<UCHAR*>(const_cast<float*>(_depths.data())), getPathByteSize()); }
+    const Eigen::VectorXf& getDepths() const {return _depths;}
     
 private:
 
     static std::vector<std::set<int>> _graph;
 
-    Eigen::Vectorxf _depths;
+    Eigen::VectorXf _depths;
 
 };
 
-typedef std::shared_ptr<PathGraph> PathGraphPtr
+typedef std::shared_ptr<PathGraph> PathGraphPtr;

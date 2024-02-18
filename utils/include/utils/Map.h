@@ -53,7 +53,7 @@ private:
 
 	ci::Shape2d makeRect(glm::vec2 topLeft, float width, float height);
 	void loadBounds(ci::XmlTree map, std::string name, std::vector<ci::Shape2d>& bounds);
-	void createPathMap(iGrid& pathMap, glm::ivec2 end, std::set<int>& boundingDevs = std::set<int>({0}));
+	void createPathMap(iGrid& pathMap, glm::ivec2 end, std::set<int>& boundingDevs = std::set<int>({0}), int excludeDev = -1);
 
 	std::vector<iGrid> _pathMaps;
 

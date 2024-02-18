@@ -1,5 +1,7 @@
 #include<algorithm>
 
+#include <fmt/core.h>
+
 #include "utils/Map.h"
 
 DeviceView::DeviceView(int id_, glm::vec2 pos_, float angle_) {
@@ -21,7 +23,7 @@ DeviceView::DeviceView(int id_, glm::vec2 pos_, float angle_) {
 
 Map::Map(std::string filename) {
 
-    fmt::print("Loading map from {} ...", filename);
+    fmt::print("Loading map from {} ... ", filename);
 
 	ci::XmlTree doc(ci::loadFile(filename));
 	ci::XmlTree map = doc.getChild("map");
@@ -86,12 +88,12 @@ void Map::getDeviceConnections(std::vector<std::set<int>>& conns) {
 	for (DeviceView dev : devs) {
         std::set<int> connectedDevs;
         iGrid pathMap = iGrid();
-        createPathMap(pathMap, dev.pos, connectedDevs);
+        createPathMap(pathMap, dev.pos, connectedDevs, dev.id);
         conns.push_back(connectedDevs);
 	}
 }
 
-void Map::createPathMap(iGrid& pathMap, glm::ivec2 end, std::set<int>& boundingDevs) {
+void Map::createPathMap(iGrid& pathMap, glm::ivec2 end, std::set<int>& boundingDevs, int excludeDev) {
 
     bool bounding = boundingDevs.size() == 0;
 
@@ -109,7 +111,7 @@ void Map::createPathMap(iGrid& pathMap, glm::ivec2 end, std::set<int>& boundingD
             }
             if (bounding) {
                 for (DeviceView& devView : devs) {
-                    if (devView.view.contains(here)) {
+                    if (devView.id != excludeDev && devView.view.contains(here)) {
                         pathMap[x][y] = -devView.id - 3;
                         break;
                     }

@@ -1,4 +1,3 @@
-<!-- More devs -->
 <?xml version="1.0"?>
 <map width="180" height="60">
 
@@ -7,26 +6,23 @@
     <outBound x="70" y="10" width="40" height="40"></outBound>
     <outBound x="130" y="10" width="40" height="40"></outBound>
 
-    <device id="0" x="5" y="30" direction="90"></device>
-    <device id="1" x="30" y="5" direction="180"></device>
-    <device id="2" x="30" y="5" direction="0"></device>
-    <device id="3" x="60" y="30" direction="90"></device>
-    <device id="4" x="90" y="5" direction="180"></device>
-    <device id="5" x="90" y="5" direction="0"></device>
-    <device id="6" x="120" y="30" direction="90"></device>
-    <device id="7" x="150" y="5" direction="180"></device>
-    <device id="8" x="150" y="5" direction="0"></device>
-    <device id="9" x="175" y="30" direction="90"></device>
-    <device id="10" x="175" y="30" direction="-90"></device>
-    <device id="11" x="150" y="55" direction="0"></device>
-    <device id="12" x="150" y="55" direction="180"></device>
-    <device id="13" x="120" y="30" direction="-90"></device>
-    <device id="14" x="90" y="55" direction="0"></device>
-    <device id="15" x="90" y="55" direction="180"></device>
-    <device id="16" x="60" y="30" direction="-90"></device>
-    <device id="17" x="30" y="55" direction="0"></device>
-    <device id="18" x="30" y="55" direction="180"></device>
-    <device id="19" x="5" y="30" direction="-90"></device>
+    <device id="0" x="30" y="5" direction="180"></device>
+    <device id="1" x="30" y="5" direction="0"></device>
+
+    <device id="2" x="90" y="5" direction="180"></device>
+    <device id="3" x="90" y="5" direction="0"></device>
+
+    <device id="4" x="150" y="5" direction="180"></device>
+    <device id="5" x="150" y="5" direction="0"></device>
+
+    <device id="6" x="150" y="55" direction="0"></device>
+    <device id="7" x="150" y="55" direction="180"></device>
+
+    <device id="8" x="90" y="55" direction="0"></device>
+    <device id="9" x="90" y="55" direction="180"></device>
+
+    <device id="10" x="30" y="55" direction="0"></device>
+    <device id="11" x="30" y="55" direction="180"></device>
 
     <door id="0" x="60" y="0" angle="0"></door>
     <door id="1" x="120" y="0" angle="0"></door>

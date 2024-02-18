@@ -7,17 +7,15 @@
 
 Simulation::Simulation() {
 
+    PathGraph::initGraph("../../../map.xml", "pathGraph.csv");
+
 	_db.connect();
 
 	_db.createTables();
 	_db.clearTables();
 
-	printf("Loading map ... ");
-
 	_map = Map("../../../map.xml");
 	_map.generatePathMaps();
-
-	printf("Done\n");
 
 	uploadDataSet("../../../dataset.csv", 9, 12);
 	_db.getEntities(_entities);

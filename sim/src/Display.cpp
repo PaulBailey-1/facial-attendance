@@ -139,7 +139,7 @@ void Display::draw() {
 
 	for (Particle par : _particles) {
 		ci::gl::color(ci::Color(ci::CM_HSV, par.shortTermStateId / 20.0, par.weight, 1.0));
-		ci::gl::drawCircle(_map->devs[par.originDeviceId].pos, 1.0);
+		ci::gl::drawSolidCircle(_map->devs[par.originDeviceId].pos, 1.0);
 	}
 
 }

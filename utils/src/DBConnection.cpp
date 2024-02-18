@@ -130,7 +130,7 @@ void DBConnection::createTables() {
         period INT, \
         short_term_state_key INT, \
         long_term_state_key INT, \
-        CONSTRAINT FK_sts2 FOREIGN KEY (short_term_state_key) REFERENCES short_term_states(id), \
+        CONSTRAINT FK_sts3 FOREIGN KEY (short_term_state_key) REFERENCES short_term_states(id), \
         CONSTRAINT FK_lts2 FOREIGN KEY (long_term_state_key) REFERENCES long_term_states(id), \
         UNIQUE KEY path_uidx (period, short_term_state_key, long_term_state_key)\
     )", PathGraph::getPathByteSize()).c_str(), r);
@@ -307,7 +307,7 @@ void DBConnection::createParticle(ShortTermStatePtr sts, UpdatePtr update, doubl
 
 void DBConnection::getParticles(std::vector<Particle>& particles) {
     boost::mysql::results result;
-    query("SELECT origin_device_id, short_term_state_key, weight FROM particles", result);
+    query("SELECT origin_device_id, short_term_state_id, weight FROM particles", result);
     if (!result.empty()) {
         for (const boost::mysql::row_view& row : result.rows()) {
             Particle particle;
@@ -540,7 +540,7 @@ PathGraphPtr DBConnection::getPath(ShortTermStatePtr sts, int period) {
     return nullptr;
 }
 
-PathGraphPtr DBConnection::getPath(LongTermState lts, int period) {
+PathGraphPtr DBConnection::getPath(LongTermStatePtr lts, int period) {
     try {
         fmt::print("Gettting path for lts {} period {} ... ", lts->id, period);
         boost::mysql::results result;
@@ -569,7 +569,7 @@ void DBConnection::getPaths(ShortTermStatePtr sts, std::vector<PathGraphPtr> pat
     ).bind(sts->id), result);
     if (!result.empty()) {
         for (const boost::mysql::row_view& row : result.rows()) {
-            paths.push_back(PathGraphPtr(new PathGraphPtr(sts->id, -1, row[0].as_int64(), row[1].as_blob())));
+            paths.push_back(PathGraphPtr(new PathGraph(sts->id, -1, row[0].as_int64(), row[1].as_blob())));
         }
     }
     printf("Done\n");

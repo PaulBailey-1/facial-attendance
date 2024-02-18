@@ -1,7 +1,7 @@
 
-#include "PathGraph.h"
+#include "utils/PathGraph.h"
 
-std::vector<std::set<int>> _graph;
+std::vector<std::set<int>> PathGraph::_graph;
 
 PathGraph::PathGraph(int stsId_, int ltsId_, int period_, boost::span<const unsigned char> path) :
     shortTermStateId(stsId_),
@@ -12,37 +12,44 @@ PathGraph::PathGraph(int stsId_, int ltsId_, int period_, boost::span<const unsi
         printf("PathGraph::PathGraph - Error: PathGraph uninitlized");
     }
 
-    if (path != nullptr) {
+    if (path.size() > 0) {
 	    memcpy(_depths.data(), path.data(), path.size_bytes());
     } else {
-        _depths = Eigen::Vectorxf::Zero(_graph.size());
+        _depths = Eigen::VectorXf::Zero(_graph.size());
     }
 }
 
 void PathGraph::initGraph(std::string mapPath, std::string cachePath) {
     
+    printf("Initilizing path graph ... \n");
+
     std::ifstream cacheIn;
     cacheIn.open(cachePath.c_str());
     if (!cacheIn.good()) {
         cacheIn.close();
 
+        printf("Getting connections\n");
+
         Map map(mapPath);
 	    map.getDeviceConnections(_graph);
 
-        // Write cache
+        printf("Writing to cache\n");
         std::ofstream cacheOut;
         cacheOut.open(cachePath);
         if (cacheOut.good()) {
             for (std::set<int>& conns : _graph) {
                 for (auto i = conns.begin(); i != conns.end(); i++) {
-                    cacheOut << std::to_string(*i) << ", ";
+                    cacheOut << std::to_string(*i);
+                    if (i != --conns.end()) {
+                        cacheOut << ", ";
+                    }
                 }
                 cacheOut << "\n";
             }
         }
         cacheOut.close();
     } else {
-        // Read cache
+        printf("Reading cache\n");
         std::string line;
         while (1) {
             std::getline(cacheIn, line);
@@ -57,6 +64,7 @@ void PathGraph::initGraph(std::string mapPath, std::string cachePath) {
         }
         cacheIn.close();
     }
+    printf("Done\n");
 }
 
 size_t PathGraph::getPathByteSize() {

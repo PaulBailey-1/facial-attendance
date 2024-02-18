@@ -8,6 +8,7 @@ set(SRCS
     src/DBConnection.cpp
     src/Entity.cpp
     src/Map.cpp
+    src/PathGraph.cpp
 )
 
 find_package(Boost REQUIRED )
