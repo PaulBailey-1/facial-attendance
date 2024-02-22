@@ -9,13 +9,12 @@ PathGraph::PathGraph(int stsId_, int ltsId_, int period_, boost::span<const unsi
     period(period_)
 {
     if (_graph.size() == 0) {
-        printf("PathGraph::PathGraph - Error: PathGraph uninitlized");
+        printf("PathGraph::PathGraph - Error: PathGraph uninitlized\n");
     }
 
+    _depths = Eigen::VectorXf::Zero(_graph.size());
     if (path.size() > 0) {
 	    memcpy(_depths.data(), path.data(), path.size_bytes());
-    } else {
-        _depths = Eigen::VectorXf::Zero(_graph.size());
     }
 }
 

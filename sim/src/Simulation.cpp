@@ -17,7 +17,7 @@ Simulation::Simulation() {
 	_map = Map("../../../map.xml");
 	_map.generatePathMaps();
 
-	uploadDataSet("../../../dataset.csv", 9, 12);
+	uploadDataSet("../../../dataset.csv");
 	_db.getEntities(_entities);
 	getSchedules();
 
@@ -69,7 +69,7 @@ void Simulation::run() {
 	}
 }
 
-void Simulation::uploadDataSet(std::string filename, int entities, int imgs) {
+void Simulation::uploadDataSet(std::string filename) {
 
 	if (_db.getEntityFeatures(EntityPtr(new Entity(1)), 0)) {
 		return;
@@ -78,17 +78,26 @@ void Simulation::uploadDataSet(std::string filename, int entities, int imgs) {
 	std::vector<std::vector<std::vector<float>>> dataSet;
 	std::vector<std::vector<float>> currentEntity;
 	fmt::print("Uploading dataset to db from {} ... ", filename);
+
 	try {
 		std::ifstream file(filename);
 		int updateNum = 0;
 		int entity = 0;
 		if (file.is_open()) {
 			std::string line;
+
+			std::getline(file, line);
+			std::stringstream s(line);
+			std::string num;
+			std::getline(s, num, ',');
+			int entities = stoi(num);
+			std::getline(s, num, ',');
+			int imgs = stoi(num);
+
 			while (1) {
 				std::getline(file, line);
 				if (file.eof()) break;
-				std::stringstream s(line);
-				std::string num;
+				s = std::stringstream(line);
 				UpdatePtr data = UpdatePtr(new Update(0, updateNum));
 				int feature = 0;
 				std::vector<float> vec;

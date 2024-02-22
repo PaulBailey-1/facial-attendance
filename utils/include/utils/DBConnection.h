@@ -28,6 +28,7 @@ public:
     void pushUpdate(int devId, const boost::span<UCHAR> facialFeatures);
     void getNewUpdates(std::vector<UpdatePtr>& updates);
     void updateUpdate(UpdatePtr update);
+    void removeUpdate(UpdatePtr update);
     void removePreviousUpdates(UpdatePtr update);
     void setUpdatesPeriod(int period);
     void getUpdatesPath(int stsId, std::vector<int>& devPath);

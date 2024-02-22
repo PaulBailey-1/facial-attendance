@@ -241,6 +241,19 @@ void DBConnection::updateUpdate(UpdatePtr update) {
     }
 }
 
+void DBConnection::removeUpdate(UpdatePtr update) {
+    try {
+        boost::mysql::results result;
+        _conn.execute(_conn.prepare_statement(
+            "DELETE FROM updates WHERE id=?"
+        ).bind(update->id), result);
+    }
+    catch (const boost::mysql::error_with_diagnostics& err) {
+        std::cerr << "Error: " << err.what() << '\n'
+            << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
+    }
+}
+
 void DBConnection::removePreviousUpdates(UpdatePtr update) {
     try {
         boost::mysql::results result;
@@ -292,7 +305,7 @@ void DBConnection::clearUpdates() {
 
 void DBConnection::createParticle(ShortTermStatePtr sts, UpdatePtr update, double weight) {
     try {
-    fmt::println("Creating particle for sts {} on device {}", sts->id, update->deviceId);
+    fmt::print("Creating particle for sts {} on device {} ... ", sts->id, update->deviceId);
         boost::mysql::results result;
         _conn.execute(_conn.prepare_statement(
             "INSERT INTO particles (origin_device_id, short_term_state_id, weight) VALUES(?,?,?)"
@@ -521,7 +534,7 @@ void DBConnection::clearShortTermStates() {
 
 PathGraphPtr DBConnection::getPath(ShortTermStatePtr sts, int period) {
     try {
-        fmt::print("Gettting path for sts {} period {} ... ", sts->id, period);
+        fmt::print("Getting path for sts {} period {} ... ", sts->id, period);
         boost::mysql::results result;
         _conn.execute(_conn.prepare_statement(
             "SELECT path FROM paths WHERE short_term_state_key=? AND period=?"

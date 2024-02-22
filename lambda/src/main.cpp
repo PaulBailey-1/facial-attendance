@@ -21,22 +21,32 @@ FFMat R = FFMat::Zero();
 
 void getFacialMatches(UpdatePtr update, const std::vector<ShortTermStatePtr>& pool, std::vector<ShortTermStatePtr>& matches, std::vector<double>& matchDistances) {
 
-    for (const ShortTermStatePtr &cmp : pool) {
+    try {
+        for (const ShortTermStatePtr &cmp : pool) {
 
-        double distance = l2Distance(update->facialFeatures, cmp->facialFeatures);
-        
-        // Bhattacharyya distance
-        //std::unique_ptr<FFVec> diff = std::unique_ptr<FFVec>(new FFVec());
-        //std::unique_ptr<FFMat> sigma = std::unique_ptr<FFMat>(new FFMat());
-        //*diff = update->facialFeatures - cmp->facialFeatures;
-        //*sigma = (update->facialFeaturesCov + cmp->facialFeaturesCov) / 2;
-        //distance = float(diff->transpose() * sigma->inverse() * *diff) / 8 + log(sigma->determinant() / sqrt(update->facialFeaturesCov.determinant() * cmp->facialFeaturesCov.determinant())) / 2;
+            double distance = l2Distance(update->facialFeatures, cmp->facialFeatures);
+            
+            // Bhattacharyya distance
+            //std::unique_ptr<FFVec> diff = std::unique_ptr<FFVec>(new FFVec());
+            //std::unique_ptr<FFMat> sigma = std::unique_ptr<FFMat>(new FFMat());
+            //*diff = update->facialFeatures - cmp->facialFeatures;
+            //*sigma = (update->facialFeaturesCov + cmp->facialFeaturesCov) / 2;
+            //distance = float(diff->transpose() * sigma->inverse() * *diff) / 8 + log(sigma->determinant() / sqrt(update->facialFeaturesCov.determinant() * cmp->facialFeaturesCov.determinant())) / 2;
 
-        fmt::println("Matching update {} to state {} with distance {}", update->id, cmp->id, distance);
-        if (distance < MATCHING_THRESH) {
-            matches.push_back(cmp);
-            matchDistances.push_back(distance);
+            fmt::println("Matching update {} to state {} with distance {}", update->id, cmp->id, distance);
+            if (std::isnan(distance)) {
+                throw std::runtime_error("NaN distance");
+            }
+            if (distance == 0) {
+                throw std::runtime_error("0 distance");
+            }
+            if (distance < MATCHING_THRESH) {
+                matches.push_back(cmp);
+                matchDistances.push_back(distance);
+            }
         }
+    } catch (std::exception& e) {
+        fmt::println("main:getFacialMatches Error - {}", e.what());
     }
 }
 
@@ -44,8 +54,7 @@ void processUpdate(UpdatePtr update) {
 
     fmt::print("Proccessing update {} from device {}\n", update->id, update->deviceId);
 
-    // EntityStatePtr updateState = std::static_pointer_cast<EntityState>(update);
-
+    update->facialFeaturesCov = R;
     int period = db.getPeriod();
 
     std::vector<ShortTermStatePtr> shortTermStates;
@@ -75,9 +84,6 @@ void processUpdate(UpdatePtr update) {
         }
 
         match->lastUpdateDeviceId = update->deviceId;
-        // double distance = matchDistances[i];
-        // update->facialFeaturesCov = R * distance; // todo func
-        update->facialFeaturesCov = R;
         match->kalmanUpdate(update);
 
         // fmt::println("Rematching sts {} to long term states", match->id);
@@ -85,8 +91,6 @@ void processUpdate(UpdatePtr update) {
         // if (ltMatch != nullptr) {
         //     match->longTermStateKey = ltMatch->id;
         // }
-
-
 
         // update->shortTermStateId = match->id;
         match->updateCount++;
@@ -123,7 +127,8 @@ void processUpdate(UpdatePtr update) {
         update->shortTermStateId = db.createShortTermState(update);
     }
 
-    db.removePreviousUpdates(update);
+    db.removeUpdate(update);
+    // db.removePreviousUpdates(update);
     // db.updateUpdate(update);
 }
 
@@ -170,7 +175,7 @@ int main() {
     
     loadUpdateCov("../../../updateCov.csv");
 
-    // PathGraph::initGraph("../../../map.xml", "pathGraph.csv");
+    PathGraph::initGraph("../../../map.xml", "pathGraph.csv");
 
     std::vector<UpdatePtr> updates;
     printf("Checking for new updates... \n");
