@@ -303,13 +303,13 @@ void DBConnection::clearUpdates() {
     printf("Done\n");
 }
 
-void DBConnection::createParticle(ShortTermStatePtr sts, UpdatePtr update, double weight) {
+void DBConnection::createParticle(int stsId, UpdatePtr update, double weight) {
     try {
-    fmt::print("Creating particle for sts {} on device {} ... ", sts->id, update->deviceId);
+    fmt::print("Creating particle for sts {} on device {} ... ", stsId, update->deviceId);
         boost::mysql::results result;
         _conn.execute(_conn.prepare_statement(
             "INSERT INTO particles (origin_device_id, short_term_state_id, weight) VALUES(?,?,?)"
-        ).bind(update->deviceId, sts->id, weight), result);
+        ).bind(update->deviceId, stsId, weight), result);
         printf("Done\n");
     }
     catch (const boost::mysql::error_with_diagnostics& err) {

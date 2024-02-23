@@ -71,6 +71,7 @@ void Map::loadBounds(ci::XmlTree map, std::string name, std::vector<ci::Shape2d>
 }
 
 void Map::generatePathMaps(std::vector<std::set<int>>& matches) {
+    printf("Generating path maps ... ");
     bool getMatches = matches.size() == 0;
 	for (Door door : doors) {
         _pathMaps.push_back(iGrid());
@@ -82,6 +83,7 @@ void Map::generatePathMaps(std::vector<std::set<int>>& matches) {
             createPathMap(_pathMaps.back(), door.pos);
         }
 	}
+    printf("Done\n");
 }
 
 void Map::getDeviceConnections(std::vector<std::set<int>>& conns) {

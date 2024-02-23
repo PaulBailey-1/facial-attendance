@@ -97,7 +97,7 @@ void processUpdate(UpdatePtr update) {
         db.updateShortTermState(match);
 
         double weight = 1 - (matchDistances[i] / MATCHING_THRESH); // 0 to 1
-        db.createParticle(match, update, weight);
+        db.createParticle(match->id, update, weight);
 
     }
 
@@ -124,7 +124,8 @@ void processUpdate(UpdatePtr update) {
 
     if (matches.size() == 0) {
         fmt::print("No match found\n");
-        update->shortTermStateId = db.createShortTermState(update);
+        int stsId = db.createShortTermState(update);
+        db.createParticle(stsId, update, 1.0);
     }
 
     db.removeUpdate(update);

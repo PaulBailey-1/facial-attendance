@@ -34,7 +34,7 @@ public:
     void getUpdatesPath(int stsId, std::vector<int>& devPath);
     void clearUpdates();
 
-    void createParticle(ShortTermStatePtr sts, UpdatePtr update, double weight);
+    void createParticle(int stsId, UpdatePtr update, double weight);
     void getParticles(std::vector<Particle>& particles);
 
     LongTermStatePtr getLongTermState(int id);
