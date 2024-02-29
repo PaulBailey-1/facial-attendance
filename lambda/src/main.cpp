@@ -50,6 +50,36 @@ void getFacialMatches(UpdatePtr update, const std::vector<ShortTermStatePtr>& po
     }
 }
 
+LongTermStatePtr getFacialMatch(ShortTermStatePtr sts, const std::vector<LongTermStatePtr>& pool, std::vector<ShortTermStatePtr>& matches) {
+    try {
+        double smallestDistance = -1;
+        LongTermStatePtr closest = nullptr;
+        for (const LongTermStatePtr &cmp : pool) {
+
+            double distance = l2Distance(sts->facialFeatures, cmp->facialFeatures);
+            
+            fmt::println("Matching sts {} to lts {} with distance {}", sts->id, cmp->id, distance);
+            if (std::isnan(distance)) {
+                throw std::runtime_error("NaN distance");
+            }
+            if (distance == 0) {
+                throw std::runtime_error("0 distance");
+            }
+
+            if (distance < smallestDistance || smallestDistance == -1) {
+                smallestDistance = distance;
+                closest = cmp;
+            }
+        }
+        if (smallestDistance < MATCHING_THRESH) {
+            return closest;
+        }
+        return nullptr;
+    } catch (std::exception& e) {
+        fmt::println("main:getFacialMatch Error - {}", e.what());
+    }
+}
+
 void processUpdate(UpdatePtr update) {
 
     fmt::print("Proccessing update {} from device {}\n", update->id, update->deviceId);
@@ -86,11 +116,11 @@ void processUpdate(UpdatePtr update) {
         match->lastUpdateDeviceId = update->deviceId;
         match->kalmanUpdate(update);
 
-        // fmt::println("Rematching sts {} to long term states", match->id);
-        // LongTermStatePtr ltMatch = std::static_pointer_cast<LongTermState>(facialMatch(match, longTermStates));
-        // if (ltMatch != nullptr) {
-        //     match->longTermStateKey = ltMatch->id;
-        // }
+        fmt::println("Rematching sts {} to long term states", match->id);
+        LongTermStatePtr ltMatch = getFacialMatch(match, longTermStates);
+        if (ltMatch != nullptr) {
+            match->longTermStateKey = ltMatch->id;
+        }
 
         // update->shortTermStateId = match->id;
         match->updateCount++;
