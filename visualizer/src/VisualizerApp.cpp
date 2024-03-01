@@ -19,7 +19,11 @@ void VisualizerApp::setup() {
 	auto nodeShape = ci::geom::Sphere().radius(0.5f).subdivisions(3);
 	_nodeShape = ci::gl::Batch::create(nodeShape, shader);
 
-	loadData("../../../dataset.csv", 9, 12);
+	_db.connect();
+	loadEntities();
+	loadShortTermState();
+
+	// loadData("../../../dataset.csv", 9, 12);
 	//loadData("../../../../datasetSmall.csv", 4, 12);
 	//loadData("../../../../datasetTiny.csv", 2, 1);
 
@@ -141,7 +145,11 @@ void VisualizerApp::draw() {
 	double scale = _maxDistance / (_zoom * 5.0);
 	for (int i = 0; i < _nDim; i++) {
 		ci::gl::ScopedModelMatrix model;
-		ci::gl::color(ci::Color(ci::CM_HSV, _faces[i].entity / 15.0, 1, 1));
+		if (_face[i].type == DATASET) {
+			ci::gl::color(ci::Color(ci::CM_HSV, _faces[i].entity / 15.0, 1, 1));
+		} else if (_face[i].type == STS) {
+			ci::gl::color(ci::Color(1.0, 1.0, 1.0));
+		}
 		glm::vec3 pos = { _state(i, 0), _state(i, 1),  _state(i, 2) };
 		ci::gl::translate(pos);
 		ci::gl::scale(scale, scale, scale);
@@ -183,6 +191,7 @@ void VisualizerApp::loadData(std::string filename, int entities, int imgs) {
 				int feature = 0;
 				Face face;
 				face.entity = entity;
+				face.type = DATASET;
 				while (std::getline(s, num, ',')) {
 					face.features[feature] = stof(num);
 					feature++;
@@ -212,6 +221,22 @@ void VisualizerApp::loadData(std::string filename, int entities, int imgs) {
 	}
 	catch (const std::exception& err) {
 		std::cerr << "Failed to read dataset: " << err.what() << std::endl;
+	}
+}
+
+void VisualizerApp::loadEntities() {
+	std::vector<EntityPtr> entities;
+	_db.getEntitiesFeatures(entities);
+	for (EntityPtr entity& : entities) {
+		_faces.push_back(Face(entity->id, DATASET, entity->facialFeatures));
+	}
+}
+
+void VisualizerApp::loadShortTermState() {
+	std::vector<ShortTermStatePtr> stateTermStates;
+	_db.getShortTermStates(stateTermStates);
+	for (ShortTermStatePtr& sts : ShortTermStates) {
+		_faces.push_back(Face(sts->id, STS, sts->facialFeatures));
 	}
 }
 

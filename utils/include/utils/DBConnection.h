@@ -24,6 +24,7 @@ public:
 
     void getEntities(std::vector<EntityPtr>& vec);
     bool getEntityFeatures(EntityPtr entity, int devId);
+    void getEntitiesFeatures(std::vector<EntityPtr>& vec);
 
     void pushUpdate(int devId, const boost::span<UCHAR> facialFeatures);
     void getNewUpdates(std::vector<UpdatePtr>& updates);

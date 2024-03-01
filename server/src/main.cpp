@@ -90,12 +90,7 @@ void nextDay() {
 
             lts = db.getLongTermState(sts->longTermStateKey);
 
-            // Applying long term update
             lts->kalmanUpdate(sts);
-            //for (int i = 0; i < FACE_VEC_SIZE; i++) {
-            //    lts->facialFeatures[i] = sts->facialFeatures[i];
-            //}
-
             db.updateLongTermState(lts);
 
             std::vector<PathGraphPtr> stsPaths;

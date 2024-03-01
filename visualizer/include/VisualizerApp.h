@@ -12,9 +12,20 @@
 
 #include <utils/EntityState.h>
 
+enum FaceType {
+	DATASET,
+	STS
+};
 struct Face {
-	FFVec features;
 	int entity;
+	FaceType type;
+	FFVec features;
+
+	Face(int entity_, FaceType type_, FFVec features_) {
+		entity = entity_;
+		type = type_;
+		features = features_;
+	}
 };
 
 class VisualizerApp : public ci::app::App {
@@ -32,7 +43,12 @@ public:
 private:
 
 	void loadData(std::string filename, int entities, int imgs);
+	void loadEntities();
+	void loadShortTermState();
+
 	double computeCost();
+
+	DBConnection _db;
 
 	ci::Font _font;
 

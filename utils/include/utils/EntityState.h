@@ -65,6 +65,8 @@ public:
 		schedule = schedule_;
 	}
 
+	Entity(int id, boost::span<const UCHAR> facialFeatures) : EntityState(id, facialFeatures) {}
+
 	void step(float dt);
 
 	int getNextDoor(int period) const { return schedule[period - 1]; }

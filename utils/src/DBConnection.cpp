@@ -200,6 +200,23 @@ bool DBConnection::getEntityFeatures(EntityPtr entity, int devId) {
     return false;
 }
 
+void DBConnection::getEntitiesFeatures(std::vector<EntityPtr>& vec) {
+    printf("Getting entities features ... ");
+    try {
+        boost::mysql::results result;
+        _conn.execute("SELECT student_id, facial_features FROM facial_data", result);
+        if (!result.empty()) {
+            for (const boost::mysql::row_view& row : result.rows()) {
+                vec.push_back(EntityPtr(new Entity(row[0].as_int64(), row[1].as_blob())));
+            }
+        }
+        printf("Done\n");
+    }
+    catch (const boost::mysql::error_with_diagnostics& err) {
+        std::cerr << "Error: " << err.what() << '\n'
+            << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
+    }
+}
 
 void DBConnection::pushUpdate(int devId, const boost::span<UCHAR> facialFeatures) {
     fmt::print("Pushing update for device {} ... ", devId);
