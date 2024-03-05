@@ -44,7 +44,7 @@ public:
 	}
 	virtual const boost::span<UCHAR> getFacialFeaturesCovSpan() const { return boost::span<UCHAR>(reinterpret_cast<UCHAR*>(const_cast<float*>(facialFeaturesCov.data())), facialFeaturesCov.size() * sizeof(float)); }
 
-	void kalmanUpdate(std::shared_ptr<Update> update);
+	void kalmanUpdate(std::shared_ptr<EntityState> update);
 
 	friend bool operator < (const EntityState& a, const EntityState& b) {
 		return a.id < b.id;

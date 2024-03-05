@@ -12,7 +12,7 @@ double l2Distance(const FFVec& first, const FFVec& second) {
     return distance;
 }
 
-void EntityState::kalmanUpdate(UpdatePtr update) {
+void EntityState::kalmanUpdate(std::shared_ptr<EntityState> update) {
 
    // z measurement vector is update->facialFeatures
    // H is identity

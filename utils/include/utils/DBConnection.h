@@ -37,6 +37,7 @@ public:
 
     void createParticle(int stsId, UpdatePtr update, double weight);
     void getParticles(std::vector<Particle>& particles);
+    void clearParticles();
 
     LongTermStatePtr getLongTermState(int id);
     void getLongTermStates(std::vector<LongTermStatePtr>& states);
@@ -61,10 +62,14 @@ public:
     void getSchedules(std::vector<Schedule>& schedules);
     void addToSchedule(int studentId, int period, int roomId);
     void setAttendance(int room, int period, int studentId, AttendanceStatus status);
+
     int getPeriod();
+    void setPeriod(int period);
 
     int addStudent();
     void pushStudentData(UpdatePtr data, int studentId);
+
+    void initGlobals();
 
 private:
 

@@ -50,7 +50,7 @@ void getFacialMatches(UpdatePtr update, const std::vector<ShortTermStatePtr>& po
     }
 }
 
-LongTermStatePtr getFacialMatch(ShortTermStatePtr sts, const std::vector<LongTermStatePtr>& pool, std::vector<ShortTermStatePtr>& matches) {
+LongTermStatePtr getFacialMatch(ShortTermStatePtr sts, const std::vector<LongTermStatePtr>& pool) {
     try {
         double smallestDistance = -1;
         LongTermStatePtr closest = nullptr;
@@ -74,10 +74,10 @@ LongTermStatePtr getFacialMatch(ShortTermStatePtr sts, const std::vector<LongTer
         if (smallestDistance < MATCHING_THRESH) {
             return closest;
         }
-        return nullptr;
     } catch (std::exception& e) {
         fmt::println("main:getFacialMatch Error - {}", e.what());
     }
+    return nullptr;
 }
 
 void processUpdate(UpdatePtr update) {
@@ -201,10 +201,10 @@ void loadUpdateCov(std::string filename) {
 
 int main() {
 
+    loadUpdateCov("../../../updateCov.csv");
+
     db.connect();
     //db.createTables();
-    
-    loadUpdateCov("../../../updateCov.csv");
 
     PathGraph::initGraph("../../../map.xml", "pathGraph.csv");
 

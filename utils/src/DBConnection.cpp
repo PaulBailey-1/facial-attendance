@@ -64,6 +64,10 @@ void DBConnection::createTables() {
 
     boost::mysql::results r;
 
+    query("CREATE TABLE IF NOT EXISTS globals (\
+        period INT, \
+        UNIQUE KEY globals_uidx (period)\
+    )", r);
     query("CREATE TABLE IF NOT EXISTS students (\
         id INT AUTO_INCREMENT PRIMARY KEY\
     )", r);
@@ -79,7 +83,6 @@ void DBConnection::createTables() {
         room_id INT, \
         CONSTRAINT FK_student2 FOREIGN KEY (student_id) REFERENCES students(id)\
     )", r);
-    //         
     query("CREATE TABLE IF NOT EXISTS attendance (\
         day DATE DEFAULT CURRENT_DATE, \
         room_id INT, \
@@ -125,14 +128,14 @@ void DBConnection::createTables() {
         CONSTRAINT FK_sts2 FOREIGN KEY (short_term_state_id) REFERENCES short_term_states(id)\
     )", r);
     query(fmt::format("CREATE TABLE IF NOT EXISTS paths (\
-        id INT AUTO_INCREMENT PRIMARY KEY NOT NULL, \
         path BLOB({}), \
         period INT, \
         short_term_state_key INT, \
         long_term_state_key INT, \
         CONSTRAINT FK_sts3 FOREIGN KEY (short_term_state_key) REFERENCES short_term_states(id), \
         CONSTRAINT FK_lts2 FOREIGN KEY (long_term_state_key) REFERENCES long_term_states(id), \
-        UNIQUE KEY path_uidx (period, short_term_state_key, long_term_state_key)\
+        UNIQUE KEY path_sts_uidx (period, short_term_state_key), \
+        UNIQUE KEY path_lts_uidx (period, long_term_state_key)\
     )", PathGraph::getPathByteSize()).c_str(), r);
 
     printf("Done\n");
@@ -143,6 +146,7 @@ void DBConnection::clearTables() {
     printf("Clearing tables ... ");
     boost::mysql::results r;
 	query("SET FOREIGN_KEY_CHECKS = 0", r);
+    query("TRUNCATE globals", r);
     query("TRUNCATE attendance", r);
     query("TRUNCATE facial_data", r);
     query("TRUNCATE long_term_states", r);
@@ -348,6 +352,14 @@ void DBConnection::getParticles(std::vector<Particle>& particles) {
         }
     }
 }
+
+void DBConnection::clearParticles() {
+    printf("Clearing particles ... ");
+    boost::mysql::results result;
+    query("DELETE FROM particles", result);
+    printf("Done\n");
+}
+
 
 LongTermStatePtr DBConnection::getLongTermState(int id) {
     try {
@@ -595,7 +607,7 @@ void DBConnection::getPaths(ShortTermStatePtr sts, std::vector<PathGraphPtr> pat
     boost::mysql::results result;
     fmt::print("Fetching paths for sts {} ... ", sts->id);
     _conn.execute(_conn.prepare_statement(
-        "SELECT period, path FROM paths WHERE short_term_state_key=?"
+        "SELECT period, path FROM paths WHERE short_term_state_key=? ORDER BY period ASC"
     ).bind(sts->id), result);
     if (!result.empty()) {
         for (const boost::mysql::row_view& row : result.rows()) {
@@ -612,11 +624,11 @@ void DBConnection::updatePath(PathGraphPtr path) {
         boost::mysql::results result;
         if (path->shortTermStateId != -1) {
             _conn.execute(_conn.prepare_statement(
-                "INSERT INTO paths (path, period, short_term_state_key) VALUES (?,?,?) ON DUPLICATE KEY UPDATE short_term_state_key=VALUES(short_term_state_key)"
+                "INSERT INTO paths (path, period, short_term_state_key) VALUES (?,?,?) ON DUPLICATE KEY UPDATE path=VALUES(path)"
             ).bind(path->getPathSpan(), path->period, path->shortTermStateId), result);
         } else if (path->longTermStateId != -1) {
             _conn.execute(_conn.prepare_statement(
-                "INSERT INTO paths (path, period, long_term_state_key) VALUES (?,?,?) ON DUPLICATE KEY UPDATE long_term_state_key=VALUES(long_term_state_key)"
+                "INSERT INTO paths (path, period, long_term_state_key) VALUES (?,?,?) ON DUPLICATE KEY UPDATE path=VALUES(path)"
             ).bind(path->getPathSpan(), path->period, path->longTermStateId), result);
         }
         printf("Done\n");
@@ -714,12 +726,26 @@ void DBConnection::setAttendance(int room, int period, int studentId, Attendance
 
 int DBConnection::getPeriod() {
     boost::mysql::results result;
-    query("SELECT period FROM updates WHERE period IS NOT NULL ORDER BY time DESC LIMIT 1", result);
+    query("SELECT period FROM globals", result);
     if (result.rows().size() > 0) {
         return result.rows()[0][0].as_int64();
     }
     return -1;
 }
+
+void DBConnection::setPeriod(int period) {
+    try {
+        boost::mysql::results result;
+        _conn.execute(
+            _conn.prepare_statement("UPDATE globals SET period=?")
+            .bind(period), result);\
+    }
+    catch (const boost::mysql::error_with_diagnostics& err) {
+        std::cerr << "Error: " << err.what() << '\n'
+            << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
+    }
+}
+
 int DBConnection::addStudent() {
     try {
         boost::mysql::results result;
@@ -745,4 +771,9 @@ void DBConnection::pushStudentData(UpdatePtr data, int studentId) {
         std::cerr << "Error: " << err.what() << '\n'
             << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
     }
+}
+
+void DBConnection::initGlobals() {
+    boost::mysql::results r;
+    query("INSERT INTO globals (period) VALUES(0)", r);
 }

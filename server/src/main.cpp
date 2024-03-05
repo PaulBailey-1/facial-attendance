@@ -16,9 +16,15 @@ int period = 1;
 std::vector<Schedule> schedules;
 std::vector<std::set<int>> devDoorsMatches;
 
-int matchStudent(int stsId) {
+int matchStudent(ShortTermStatePtr sts) {
+    std::vector<PathGraphPtr> paths;
+    db.getPaths(sts, paths);
     std::vector<int> devPath;
-    db.getUpdatesPath(stsId, devPath);
+    for (PathGraphPtr& path : paths) {
+        // devPath.push_back(path.getEnd()); // here
+    }
+    // db.getUpdatesPath(stsId, devPath);
+
     std::vector<Schedule> possible = schedules;
 
     for (int per = 0; per < devPath.size(); per++) {
@@ -33,7 +39,7 @@ int matchStudent(int stsId) {
     }
 
     if (possible.size() > 1) {
-        fmt::print("Error: failed to match student for sts: {}, matched to students \n", stsId);
+        fmt::print("Error: failed to match student for sts: {}, matched to students \n", sts->id);
         for (Schedule& sch : possible) {
             fmt::print("{}, ", sch.studentId);
         }
@@ -74,7 +80,7 @@ void nextPeriod() {
         }
     }
 
-    db.setUpdatesPeriod(period);
+    // db.setUpdatesPeriod(period);
 }
 
 void nextDay() {
@@ -84,6 +90,9 @@ void nextDay() {
     std::vector<ShortTermStatePtr> shortTermStates;
     db.getShortTermStates(shortTermStates);
 
+    // Reduce sts
+
+    // Update lts
     for (ShortTermStatePtr& sts : shortTermStates) {
         LongTermStatePtr lts = nullptr;
         if (sts->longTermStateKey != -1) {
@@ -101,6 +110,7 @@ void nextDay() {
                 db.updatePath(ltsPath);
             }
 
+        // Promote sts to lts
         } else {
             fmt::println("Promoting sts {}", sts->id);
             int ltsId = db.createLongTermState(sts);
@@ -108,21 +118,26 @@ void nextDay() {
             db.copyPaths(sts, lts);
         }
 
+        // Match lts student
         if (lts != nullptr && lts->studentId == -1) {
-            lts->studentId = matchStudent(sts->id);
+            lts->studentId = matchStudent(sts);
             if (lts->studentId != -1)
                 db.setLongTermStateStudent(lts);
         }
     }
     
     db.clearUpdates();
+    db.clearParticles();
     db.clearShortTermStates();
 }
 
 int main() {
 
+    PathGraph::initGraph("../../../map.xml", "pathGraph.csv");
+
     db.connect();
-    db.createTables();
+    // db.createTables();
+    db.initGlobals();
 
     printf("Loading map ... ");
     Map map("../../../map.xml");
@@ -153,6 +168,7 @@ int main() {
         while (period <= 3) {
             std::cin.get();
             nextPeriod();
+            db.setPeriod(period);
             period++;
         }
         nextDay();
