@@ -21,7 +21,7 @@ int matchStudent(ShortTermStatePtr sts) {
     db.getPaths(sts, paths);
     std::vector<int> devPath;
     for (PathGraphPtr& path : paths) {
-        // devPath.push_back(path.getEnd()); // here
+        devPath.push_back(path->getFinalDev());
     }
     // db.getUpdatesPath(stsId, devPath);
 
@@ -47,6 +47,7 @@ int matchStudent(ShortTermStatePtr sts) {
     }
 
     if (possible.size() == 1) {
+        fmt::println("Matched sts {} to student {}", sts->id, possible[0].studentId);
         return possible[0].studentId;
     }
 
@@ -119,7 +120,7 @@ void nextDay() {
         }
 
         // Match lts student
-        if (lts != nullptr && lts->studentId == -1) {
+        if (lts != nullptr && lts->studentId == -1 && sts->updateCount > 1) {
             lts->studentId = matchStudent(sts);
             if (lts->studentId != -1)
                 db.setLongTermStateStudent(lts);

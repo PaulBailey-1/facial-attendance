@@ -27,6 +27,7 @@ public:
 
     void update(int lastNode, int nextNode);
     void fuse(std::shared_ptr<PathGraph> other);
+    int getFinalDev();
 
 	const boost::span<UCHAR> getPathSpan() const { return boost::span<UCHAR>(reinterpret_cast<UCHAR*>(const_cast<float*>(_depths.data())), getPathByteSize()); }
     const Eigen::VectorXf& getDepths() const {return _depths;}

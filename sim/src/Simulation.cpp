@@ -11,8 +11,8 @@ Simulation::Simulation() {
 
 	_db.connect();
 
-	_db.createTables();
 	_db.clearTables();
+	_db.createTables();
 
 	_map = Map("../../../map.xml");
 	_map.generatePathMaps();

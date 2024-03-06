@@ -128,6 +128,7 @@ void DBConnection::createTables() {
         CONSTRAINT FK_sts2 FOREIGN KEY (short_term_state_id) REFERENCES short_term_states(id)\
     )", r);
     query(fmt::format("CREATE TABLE IF NOT EXISTS paths (\
+        id INT AUTO_INCREMENT PRIMARY KEY, \
         path BLOB({}), \
         period INT, \
         short_term_state_key INT, \
@@ -356,7 +357,7 @@ void DBConnection::getParticles(std::vector<Particle>& particles) {
 void DBConnection::clearParticles() {
     printf("Clearing particles ... ");
     boost::mysql::results result;
-    query("DELETE FROM particles", result);
+    query("TRUNCATE particles", result);
     printf("Done\n");
 }
 
@@ -557,7 +558,7 @@ void DBConnection::updateShortTermState(ShortTermStatePtr state) {
 void DBConnection::clearShortTermStates() {
     printf("Clearing short term states ... ");
     boost::mysql::results result;
-    query("DELETE FROM short_term_states", result);
+    query("TRUNCATE short_term_states", result);
     printf("Done\n");
 }
 
@@ -603,7 +604,7 @@ PathGraphPtr DBConnection::getPath(LongTermStatePtr lts, int period) {
     return nullptr;
 }
 
-void DBConnection::getPaths(ShortTermStatePtr sts, std::vector<PathGraphPtr> paths) {
+void DBConnection::getPaths(ShortTermStatePtr sts, std::vector<PathGraphPtr>& paths) {
     boost::mysql::results result;
     fmt::print("Fetching paths for sts {} ... ", sts->id);
     _conn.execute(_conn.prepare_statement(
@@ -624,12 +625,32 @@ void DBConnection::updatePath(PathGraphPtr path) {
         boost::mysql::results result;
         if (path->shortTermStateId != -1) {
             _conn.execute(_conn.prepare_statement(
-                "INSERT INTO paths (path, period, short_term_state_key) VALUES (?,?,?) ON DUPLICATE KEY UPDATE path=VALUES(path)"
-            ).bind(path->getPathSpan(), path->period, path->shortTermStateId), result);
+                "SELECT id FROM paths WHERE period=? AND short_term_state_key=?"
+            ).bind(path->period, path->shortTermStateId), result);
+            if (result.rows().size() > 0) {
+                int id = result.rows()[0][0].as_int64();
+                _conn.execute(_conn.prepare_statement(
+                    "UPDATE paths SET path=? WHERE id=?"
+                    ).bind(path->getPathSpan(), id), result);
+            } else {
+                _conn.execute(_conn.prepare_statement(
+                    "INSERT INTO paths (path, period, short_term_state_key) VALUES (?,?,?)"
+                    ).bind(path->getPathSpan(), path->period, path->shortTermStateId), result);
+            }            
         } else if (path->longTermStateId != -1) {
             _conn.execute(_conn.prepare_statement(
-                "INSERT INTO paths (path, period, long_term_state_key) VALUES (?,?,?) ON DUPLICATE KEY UPDATE path=VALUES(path)"
-            ).bind(path->getPathSpan(), path->period, path->longTermStateId), result);
+                "SELECT id FROM paths WHERE period=? AND long_term_state_key=?"
+            ).bind(path->period, path->longTermStateId), result);
+            if (result.rows().size() > 0) {
+                int id = result.rows()[0][0].as_int64();
+                _conn.execute(_conn.prepare_statement(
+                    "UPDATE paths SET path=? WHERE id=?"
+                    ).bind(path->getPathSpan(), id), result);
+            } else {
+                _conn.execute(_conn.prepare_statement(
+                    "INSERT INTO paths (path, period, long_term_state_key) VALUES (?,?,?)"
+                    ).bind(path->getPathSpan(), path->period, path->longTermStateId), result);
+            }
         }
         printf("Done\n");
     }

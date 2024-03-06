@@ -80,3 +80,14 @@ void PathGraph::update(int lastNode, int nextNode) {
 void PathGraph::fuse(PathGraphPtr other) {
     _depths += other->getDepths();
 }
+
+int PathGraph::getFinalDev() {
+    // this might not be the right solution
+    int lowest = 0;
+    for (int i = 1; i < _depths.size(); i++) {
+        if (_depths[i] < _depths[lowest]) {
+            lowest = i;
+        }
+    }
+    return lowest;
+}
