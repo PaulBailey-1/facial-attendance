@@ -25,6 +25,7 @@ public:
     static void initGraph(std::string mapPath, std::string cachePath);
     static size_t getPathByteSize();
 
+    void start(int node);
     void update(int lastNode, int nextNode);
     void fuse(std::shared_ptr<PathGraph> other);
     int getFinalDev();

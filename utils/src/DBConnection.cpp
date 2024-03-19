@@ -558,7 +558,7 @@ void DBConnection::updateShortTermState(ShortTermStatePtr state) {
 void DBConnection::clearShortTermStates() {
     printf("Clearing short term states ... ");
     boost::mysql::results result;
-    query("TRUNCATE short_term_states", result);
+    query("DELETE FROM short_term_states", result);
     printf("Done\n");
 }
 
@@ -673,6 +673,13 @@ void DBConnection::copyPaths(ShortTermStatePtr sts, LongTermStatePtr lts) {
         std::cerr << "Error: " << err.what() << '\n'
             << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
     }
+}
+
+void DBConnection::clearStsPaths() {
+    printf("Clearing sts paths ... ");
+    boost::mysql::results result;
+    query("DELETE FROM paths WHERE short_term_state_key IS NOT NULL", result);
+    printf("Done\n");
 }
 
 int DBConnection::getScheduledRoom(int studentId, int period) {
@@ -796,5 +803,5 @@ void DBConnection::pushStudentData(UpdatePtr data, int studentId) {
 
 void DBConnection::initGlobals() {
     boost::mysql::results r;
-    query("INSERT INTO globals (period) VALUES(0)", r);
+    query("INSERT INTO globals (period) VALUES(1)", r);
 }

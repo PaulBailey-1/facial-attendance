@@ -57,6 +57,7 @@ public:
     void getPaths(ShortTermStatePtr sts, std::vector<PathGraphPtr>& paths);
     void updatePath(PathGraphPtr path);
     void copyPaths(ShortTermStatePtr sts, LongTermStatePtr lts);
+    void clearStsPaths();
 
     int getScheduledRoom(int studentId, int period);
     void getSchedules(std::vector<Schedule>& schedules);

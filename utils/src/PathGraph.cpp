@@ -73,6 +73,10 @@ size_t PathGraph::getPathByteSize() {
     return _graph.size() * sizeof(float);
 }
 
+void PathGraph::start(int node) {
+    _depths[node] = -1;
+}
+
 void PathGraph::update(int lastNode, int nextNode) {
     _depths[nextNode] = _depths[lastNode] - 1;
 }

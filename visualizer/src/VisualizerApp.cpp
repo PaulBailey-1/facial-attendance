@@ -5,6 +5,9 @@
 
 #include "VisualizerApp.h"
 
+#define PATH
+// #define FACES
+
 VisualizerApp::VisualizerApp() {
 }
 
@@ -20,12 +23,17 @@ void VisualizerApp::setup() {
 	_nodeShape = ci::gl::Batch::create(nodeShape, shader);
 
 	_db.connect();
+
+#ifdef FACES
+
 	loadEntities();
 	loadShortTermState();
 
 	// loadData("../../../dataset.csv", 9, 12);
 	//loadData("../../../../datasetSmall.csv", 4, 12);
 	//loadData("../../../../datasetTiny.csv", 2, 1);
+
+	_nDim = _faces.size();
 
 	// Compute distances
 	_distances = Eigen::MatrixXd::Zero(_nDim, _nDim);
@@ -48,52 +56,66 @@ void VisualizerApp::setup() {
 
 	CI_LOG_D("Beginning optimization ...");
 
+#endif
+
+#ifdef PATH
+	loadLtsPath(0, 2);
+#endif
+
 }
 
 void VisualizerApp::update() {
 
-	if (!_done) {
-		// compute gradient
-		for (int i = 0; i < _nDim; i++) {
-			Eigen::VectorXd sum = Eigen::VectorXd::Zero(_state.cols());
-			for (int j = i + 1; j < _nDim; j++) {
-				double a = 1 - _distances(i, j) / (_state.row(i) - _state.row(j)).norm();
-				sum += (_state.row(i) - _state.row(j)) * a;
-			}
-			_stateGradient.row(i) = 2.0 * sum;
+#ifdef FACES
+	if (!_descentDone) {
+		projectionGradientDescent();
+	}
+#endif
+
+}
+
+void VisualizerApp::projectionGradientDescent() {
+
+	// compute gradient
+	for (int i = 0; i < _nDim; i++) {
+		Eigen::VectorXd sum = Eigen::VectorXd::Zero(_state.cols());
+		for (int j = i + 1; j < _nDim; j++) {
+			double a = 1 - _distances(i, j) / (_state.row(i) - _state.row(j)).norm();
+			sum += (_state.row(i) - _state.row(j)) * a;
 		}
-		double gradientAvg = _stateGradient.sum() / double(_stateGradient.rows() * _stateGradient.cols());
+		_stateGradient.row(i) = 2.0 * sum;
+	}
+	double gradientAvg = _stateGradient.sum() / double(_stateGradient.rows() * _stateGradient.cols());
 
-		// gradient decent update
-		_state = _state - _stepSize * _stateGradient;
+	// gradient decent update
+	_state = _state - _stepSize * _stateGradient;
 
-		// step size freezing
-		_stepSize = 0.999 * _stepSize;
+	// step size freezing
+	_stepSize = 0.999 * _stepSize;
 
-		//fmt::println("Cost: {}", computeCost());
-		_time++;
-		double cost = computeCost();
+	//fmt::println("Cost: {}", computeCost());
+	_time++;
+	double cost = computeCost();
 
-		CI_LOG_D("Cost: " + std::to_string(cost));
-		_log << time << ", " << cost << ", " << _stepSize << ", " << gradientAvg << "\n";
+	CI_LOG_D("Cost: " + std::to_string(cost));
+	_log << time << ", " << cost << ", " << _stepSize << ", " << gradientAvg << "\n";
 
-		glm::vec3 center = { _state.col(0).sum(), _state.col(1).sum(), _state.col(2).sum() };
-		center = center / (float)_nDim;
-		_cam.setFarClip((_zoom + 0.5) * _maxDistance);
-		_cam.lookAt(center + glm::vec3{ _zoom * _maxDistance, 0, 0 }, center);
+	glm::vec3 center = { _state.col(0).sum(), _state.col(1).sum(), _state.col(2).sum() };
+	center = center / (float)_nDim;
+	_cam.setFarClip((_zoom + 0.5) * _maxDistance);
+	_cam.lookAt(center + glm::vec3{ _zoom * _maxDistance, 0, 0 }, center);
 
-		_pastCosts.push(cost);
-		_avgCostSum += cost;
-		if (_pastCosts.size() > 100) {
-			_avgCostSum -= _pastCosts.front();
-			_pastCosts.pop();
-		}
-		double avgCost = _avgCostSum / _pastCosts.size();
+	_pastCosts.push(cost);
+	_avgCostSum += cost;
+	if (_pastCosts.size() > 100) {
+		_avgCostSum -= _pastCosts.front();
+		_pastCosts.pop();
+	}
+	double avgCost = _avgCostSum / _pastCosts.size();
 
-		if (cost > avgCost) {
-			_done = true;
-			CI_LOG_D("Optimization complete");
-		}
+	if (cost > avgCost) {
+		_descentDone = true;
+		CI_LOG_D("Optimization complete");
 	}
 }
 
@@ -142,12 +164,13 @@ void VisualizerApp::draw() {
 	//	}
 	//}
 
+#ifdef FACES
 	double scale = _maxDistance / (_zoom * 5.0);
 	for (int i = 0; i < _nDim; i++) {
 		ci::gl::ScopedModelMatrix model;
-		if (_face[i].type == DATASET) {
+		if (_faces[i].type == DATASET) {
 			ci::gl::color(ci::Color(ci::CM_HSV, _faces[i].entity / 15.0, 1, 1));
-		} else if (_face[i].type == STS) {
+		} else if (_faces[i].type == STS) {
 			ci::gl::color(ci::Color(1.0, 1.0, 1.0));
 		}
 		glm::vec3 pos = { _state(i, 0), _state(i, 1),  _state(i, 2) };
@@ -157,6 +180,19 @@ void VisualizerApp::draw() {
 
 		//ci::gl::drawSolidCircle(pos, 10.0 / scale);
 	}
+#endif
+
+#ifdef PATH
+	double scale = _maxDistance / (_zoom * 5.0);
+	ci::gl::color(ci::Color(100, 100, 100));
+	for (int i = 0; i < _nDim; i++) {
+		ci::gl::ScopedModelMatrix model;
+		glm::vec3 pos = { _state(i, 0), _state(i, 1),  _state(i, 2) };
+		ci::gl::translate(pos);
+		ci::gl::scale(scale, scale, scale);
+		_nodeShape->draw();
+	}
+#endif
 
 }
 
@@ -227,18 +263,24 @@ void VisualizerApp::loadData(std::string filename, int entities, int imgs) {
 void VisualizerApp::loadEntities() {
 	std::vector<EntityPtr> entities;
 	_db.getEntitiesFeatures(entities);
-	for (EntityPtr entity& : entities) {
+	for (EntityPtr& entity : entities) {
 		_faces.push_back(Face(entity->id, DATASET, entity->facialFeatures));
 	}
 }
 
 void VisualizerApp::loadShortTermState() {
-	std::vector<ShortTermStatePtr> stateTermStates;
-	_db.getShortTermStates(stateTermStates);
-	for (ShortTermStatePtr& sts : ShortTermStates) {
+	std::vector<ShortTermStatePtr> shortTermStates;
+	_db.getShortTermStates(shortTermStates);
+	for (ShortTermStatePtr& sts : shortTermStates) {
 		_faces.push_back(Face(sts->id, STS, sts->facialFeatures));
 	}
 }
+
+void VisualizerApp::loadLtsPath(int period, int ltsId) {
+	LongTermStatePtr lts = LongTermStatePtr(new LongTermState(ltsId));
+	_path = _db.getPath(lts, period);
+}
+
 
 double VisualizerApp::computeCost() {
 	double cost = 0.0;

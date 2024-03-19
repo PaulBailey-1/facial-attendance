@@ -11,6 +11,8 @@
 #include "cinder/CameraUi.h"
 
 #include <utils/EntityState.h>
+#include <utils/PathGraph.h>
+#include <utils/DBConnection.h>
 
 enum FaceType {
 	DATASET,
@@ -20,6 +22,11 @@ struct Face {
 	int entity;
 	FaceType type;
 	FFVec features;
+
+	Face() {
+		entity = -1;
+		type = DATASET;
+	}
 
 	Face(int entity_, FaceType type_, FFVec features_) {
 		entity = entity_;
@@ -46,6 +53,9 @@ private:
 	void loadEntities();
 	void loadShortTermState();
 
+	void loadLtsPath(int period, int ltsId);
+
+	void projectionGradientDescent();
 	double computeCost();
 
 	DBConnection _db;
@@ -61,10 +71,12 @@ private:
 	double _maxDistance{ 0.0 };
 	double _zoom{ 4.0 };
 	int _time { 0 };
-	bool _done{ false };
+	bool _descentDone{ false };
 
 	std::queue<double> _pastCosts;
 	double _avgCostSum{ 0.0 };
+
+	PathGraph _path;
 
 	std::ofstream _log;
 

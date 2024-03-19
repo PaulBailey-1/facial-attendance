@@ -107,11 +107,13 @@ void processUpdate(UpdatePtr update) {
         ShortTermStatePtr match = matches[i];
 
         //if matched to short term, apply update
+        PathGraphPtr path = db.getPath(match, period);
         if (match->lastUpdateDeviceId != -1) {
-            PathGraphPtr path = db.getPath(match, period);
             path->update(match->lastUpdateDeviceId, update->deviceId);
-            db.updatePath(path);
+        } else {
+            path->start(update->deviceId);
         }
+        db.updatePath(path);
 
         match->lastUpdateDeviceId = update->deviceId;
         match->kalmanUpdate(update);

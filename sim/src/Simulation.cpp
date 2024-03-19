@@ -13,12 +13,14 @@ Simulation::Simulation() {
 
 	_db.clearTables();
 	_db.createTables();
+    _db.initGlobals();
 
 	_map = Map("../../../map.xml");
 	_map.generatePathMaps();
 
-	uploadDataSet("../../../dataset.csv");
+	uploadDataSet("../../../dataset.csv", 1);
 	_db.getEntities(_entities);
+	srand(56789765);
 	getSchedules();
 
 	printf("Creating devices ... ");
@@ -38,26 +40,11 @@ void Simulation::run() {
 
 	printf("Running simulation...\n");
 
-	int period = 1;
-
-	for (EntityPtr entity : _entities) {
-		entity->setPathMap(_map.getPathMap(entity->getNextDoor(period)));
-		entity->setStartPos(_map.doors[0].pos);
-	}
+	int period = 0;
 
 	while (1) {
-		for (EntityPtr entity : _entities) {
-			entity->step(0.2);
-		}
-		for (Device* dev : _devices) {
-			dev->run(_entities);
-		}
-		if (_db.getPeriod() == period) {
-			if (period == 3) {
-				period = 1;
-			} else {
-				period++;
-			}
+		if (_db.getPeriod() != period) {
+			period = _db.getPeriod();
 			for (EntityPtr entity : _entities) {
 				entity->setPathMap(_map.getPathMap(entity->getNextDoor(period)));
 				if (period == 1) {
@@ -65,11 +52,17 @@ void Simulation::run() {
 				}
 			}
 		}
+		for (EntityPtr entity : _entities) {
+			entity->step(0.2);
+		}
+		for (Device* dev : _devices) {
+			dev->run(_entities);
+		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 }
 
-void Simulation::uploadDataSet(std::string filename) {
+void Simulation::uploadDataSet(std::string filename, int max) {
 
 	if (_db.getEntityFeatures(EntityPtr(new Entity(1)), 0)) {
 		return;
@@ -120,11 +113,12 @@ void Simulation::uploadDataSet(std::string filename) {
 					dataSet.push_back(currentEntity);
 					currentEntity.clear();
 				}
+				if (dataSet.size() == max) break;
 			}
 			if (updateNum != 0) {
 				throw std::runtime_error("inproper alignment\n");
 			}
-			if (entity != entities) {
+			if (entity != entities && max == -1) {
 				throw std::runtime_error("unexpected number of entities\n");
 			}
 		}

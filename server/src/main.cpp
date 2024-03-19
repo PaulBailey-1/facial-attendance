@@ -38,6 +38,10 @@ int matchStudent(ShortTermStatePtr sts) {
         }
     }
 
+    if (possible.size() == 0) {
+        fmt::println("Failed to match student for sts {}", sts->id);
+    }
+
     if (possible.size() > 1) {
         fmt::print("Error: failed to match student for sts: {}, matched to students \n", sts->id);
         for (Schedule& sch : possible) {
@@ -82,6 +86,7 @@ void nextPeriod() {
     }
 
     // db.setUpdatesPeriod(period);
+    db.clearParticles();
 }
 
 void nextDay() {
@@ -90,8 +95,6 @@ void nextDay() {
 
     std::vector<ShortTermStatePtr> shortTermStates;
     db.getShortTermStates(shortTermStates);
-
-    // Reduce sts
 
     // Update lts
     for (ShortTermStatePtr& sts : shortTermStates) {
@@ -112,8 +115,8 @@ void nextDay() {
             }
 
         // Promote sts to lts
-        } else {
-            fmt::println("Promoting sts {}", sts->id);
+        } else if (sts->updateCount > 2) {
+            fmt::println("Promoting sts {} with {} updates", sts->id, sts->updateCount);
             int ltsId = db.createLongTermState(sts);
             lts = LongTermStatePtr(new LongTermState(ltsId)); 
             db.copyPaths(sts, lts);
@@ -129,6 +132,7 @@ void nextDay() {
     
     db.clearUpdates();
     db.clearParticles();
+    db.clearStsPaths();
     db.clearShortTermStates();
 }
 
@@ -138,7 +142,7 @@ int main() {
 
     db.connect();
     // db.createTables();
-    db.initGlobals();
+    // db.initGlobals();
 
     printf("Loading map ... ");
     Map map("../../../map.xml");
@@ -169,11 +173,13 @@ int main() {
         while (period <= 3) {
             std::cin.get();
             nextPeriod();
-            db.setPeriod(period);
             period++;
+            db.setPeriod(period);
         }
+        std::cin.get();
         nextDay();
         period = 1;
+        db.setPeriod(period);
     }
 
     return 0;
