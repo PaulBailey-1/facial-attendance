@@ -48,13 +48,14 @@ public:
 	void generatePathMaps(std::vector<std::set<int>>& matches = std::vector<std::set<int>>(1));
 	void getDeviceConnections(std::vector<std::set<int>>& conns, Eigen::MatrixXd& distances);
 
-	const iGrid* getPathMap(int room) const { return &_pathMaps[room]; }
+	const iGrid* getPathMap(int room) const;
+	iGrid getDevicePathMap(int dev) const;
 
 private:
 
 	ci::Shape2d makeRect(glm::vec2 topLeft, float width, float height);
 	void loadBounds(ci::XmlTree map, std::string name, std::vector<ci::Shape2d>& bounds);
-	void createPathMap(iGrid& pathMap, glm::ivec2 end, std::set<int>& boundingDevs = std::set<int>({0}), int excludeDev = -1);
+	void createPathMap(iGrid& pathMap, glm::ivec2 end, std::set<int>& boundingDevs = std::set<int>({0}), int excludeDev = -1) const;
 
 	std::vector<iGrid> _pathMaps;
 

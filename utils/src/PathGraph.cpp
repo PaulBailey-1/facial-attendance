@@ -4,6 +4,7 @@
 #include "utils/PathGraph.h"
 
 std::vector<std::set<int>> PathGraph::_graph;
+Eigen::MatrixXd PathGraph::_distances;
 
 PathGraph::PathGraph(int stsId_, int ltsId_, int period_, boost::span<const unsigned char> path) :
     shortTermStateId(stsId_),
@@ -69,7 +70,7 @@ void PathGraph::initGraph(std::string mapPath, std::string cachePath) {
             std::getline(cacheIn, line);
             if (line == "distances") {
                 readingDistances = true;
-                _distances = Eigen::MatrixXd::Zeros(_graph.size(), _graph.size());
+                _distances = Eigen::MatrixXd::Zero(_graph.size(), _graph.size());
                 continue;
             }
             if (cacheIn.eof()) break;
@@ -84,7 +85,7 @@ void PathGraph::initGraph(std::string mapPath, std::string cachePath) {
             } else {
                 int col = 0;
                 while (std::getline(s, num, ',')) {
-                    _distances(distancesRow, col) = stoif(num);
+                    _distances(distancesRow, col) = stof(num);
                     col++;
                 }
                 distancesRow++;

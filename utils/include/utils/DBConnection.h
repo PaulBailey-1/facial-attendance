@@ -10,6 +10,8 @@
 #include "EntityState.h"
 #include "PathGraph.h"
 
+typedef boost::mysql::datetime::time_point TimePoint;
+
 class DBConnection {
 public:
 
@@ -39,7 +41,7 @@ public:
     void getParticles(std::vector<Particle>& particles);
     void clearParticles();
 
-    void addParticleTime();
+    void addParticleTime(Particle particle, int deviceId, TimePoint expectedTime);
 
     LongTermStatePtr getLongTermState(int id);
     void getLongTermStates(std::vector<LongTermStatePtr>& states);
@@ -55,7 +57,7 @@ public:
     void updateShortTermState(ShortTermStatePtr state);
     void clearShortTermStates();
 
-    PathGraphPtr getPath(ShortTermStatePtr sts, int period);
+    PathGraphPtr getPath(ShortTermStatePtr sts, int period, bool silent = false);
     PathGraphPtr getPath(LongTermStatePtr lts, int period);
     void getPaths(ShortTermStatePtr sts, std::vector<PathGraphPtr>& paths);
     void updatePath(PathGraphPtr path);
@@ -75,7 +77,7 @@ public:
 
     void initGlobals();
 
-    std::chrono::time_point getTime();
+    TimePoint getTime();
 
 private:
 

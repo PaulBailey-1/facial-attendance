@@ -87,13 +87,14 @@ void Map::generatePathMaps(std::vector<std::set<int>>& matches) {
 }
 
 void Map::getDeviceConnections(std::vector<std::set<int>>& conns, Eigen::MatrixXd& distances) {
-    distances = Eigen::MatrixXd(devs.size(), devs.size());
+    distances = Eigen::MatrixXd::Zero(devs.size(), devs.size());
 	for (int i = 0; i < devs.size(); i++) {
         DeviceView dev = devs[i];
         std::set<int> connectedDevs;
         iGrid pathMap = iGrid();
         createPathMap(pathMap, dev.pos, connectedDevs, dev.id);
         conns.push_back(connectedDevs);
+        createPathMap(pathMap, dev.pos);
         for (auto j = connectedDevs.begin(); j != connectedDevs.end(); j++) {
             glm::ivec2 ipos = { round(devs[*j].pos.x), round(devs[*j].pos.y) };
             distances(i, *j) = pathMap[ipos.x][ipos.y];
@@ -101,7 +102,14 @@ void Map::getDeviceConnections(std::vector<std::set<int>>& conns, Eigen::MatrixX
 	}
 }
 
-void Map::createPathMap(iGrid& pathMap, glm::ivec2 end, std::set<int>& boundingDevs, int excludeDev) {
+const iGrid* Map::getPathMap(int room) const { return &_pathMaps[room]; }
+iGrid Map::getDevicePathMap(int dev) const {
+    iGrid map = iGrid();
+    createPathMap(map, devs[dev].pos);
+    return map;
+}
+
+void Map::createPathMap(iGrid& pathMap, glm::ivec2 end, std::set<int>& boundingDevs, int excludeDev) const {
 
     bool bounding = boundingDevs.size() == 0;
 
@@ -118,7 +126,7 @@ void Map::createPathMap(iGrid& pathMap, glm::ivec2 end, std::set<int>& boundingD
                 }
             }
             if (bounding) {
-                for (DeviceView& devView : devs) {
+                for (const DeviceView& devView : devs) {
                     if (devView.id != excludeDev && devView.view.contains(here)) {
                         pathMap[x][y] = -devView.id - 3;
                         break;

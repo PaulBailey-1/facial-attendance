@@ -43,7 +43,7 @@ void Display::update() {
 		_particles.clear();
 		_db.getParticles(_particles);
 		if (_shortTermStates.size() > 0) {
-			_pathGraph = _db.getPath(_shortTermStates[0], _db.getPeriod());
+			_pathGraph = _db.getPath(_shortTermStates[0], _db.getPeriod(), true);
 		}
 	}
 	limiter++;
@@ -100,18 +100,22 @@ void Display::draw() {
 	}
 
 	//ci::gl::scale(1/scale, 1/scale);
-	//ci::gl::color(ci::Color::black());
+	// ci::gl::color(ci::Color::black());
 
 	// Draw flood fill
-	//if (_entities->size() > 0) {
-	//	const iGrid& pathMap = *(_map->getPathMap((*_entities)[0]->getNextDoor(1)));
-	//	for (int x = 0; x < pathMap.size(); x+=4) {
-	//		for (int y = 0; y < pathMap[x].size(); y+=4) {
-	//			ci::gl::Texture2dRef textTexture = ci::gl::Texture2d::create(tboxBase.text(std::to_string(pathMap[x][y])).render());
-	//			ci::gl::draw(textTexture, (glm::vec2(x, y) * scale) - glm::vec2(tboxBase.getSize()) * 0.5f);
-	//		}
-	//	}
-	//}
+	// ci::gl::color(ci::Color::black());
+	// ci::gl::scale(1 / scale, 1 / scale);
+	// if (_entities->size() > 0) {
+	// 	// const iGrid& pathMap = *(_map->getPathMap(19));
+	// 	iGrid pathMap = _map->getDevicePathMap(19);
+	// 	for (int x = 0; x < pathMap.size(); x+=4) {
+	// 		for (int y = 0; y < pathMap[x].size(); y+=4) {
+	// 			ci::gl::Texture2dRef textTexture = ci::gl::Texture2d::create(tboxBase.text(std::to_string(pathMap[x][y])).render());
+	// 			ci::gl::draw(textTexture, (glm::vec2(x, y) * scale) - glm::vec2(tboxBase.getSize()) * 0.5f);
+	// 		}
+	// 	}
+	// }
+	// ci::gl::scale(scale, scale);
 	
 	// Draw entities
 	for (EntityPtr entity : *_entities) {

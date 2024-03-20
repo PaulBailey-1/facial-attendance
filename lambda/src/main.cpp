@@ -26,7 +26,7 @@ void computeParticleTimes(Particle particle, PathGraphPtr path) {
     int nextNode = -1;
     while(nextNode = path->getNext(node) != -1) {
         double distance = PathGraph::getGraphEdgeLength(node, nextNode);
-        db.addParticleTime(particle, node, startTime + std::chrono::milliseconds((distance / speed) * 1000));
+        db.addParticleTime(particle, node, startTime + std::chrono::milliseconds(int((distance / speed) * 1000)));
     }
 }
 

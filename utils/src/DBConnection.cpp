@@ -38,6 +38,8 @@ bool DBConnection::connect() {
         std::cerr << "Error: " << err.what() << std::endl;
         return false;
     }
+    boost::mysql::results r;
+    query("SET time_zone = '+00:00'", r);
     if (!logged) { logged = true; printf("Connected\n"); }
     return true;
 }
@@ -343,7 +345,7 @@ Particle DBConnection::createParticle(int stsId, UpdatePtr update, double weight
         Particle particle;
         query("SELECT LAST_INSERT_ID()", result);
         particle.id = result.rows()[0][0].as_uint64();
-        particle.originDeviceId = update->deviceId();
+        particle.originDeviceId = update->deviceId;
         particle.shortTermStateId = stsId;
         particle.weight = weight;
         printf("Done\n");
@@ -353,6 +355,7 @@ Particle DBConnection::createParticle(int stsId, UpdatePtr update, double weight
         std::cerr << "Error: " << err.what() << '\n'
             << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
     }
+    return Particle();
 }
 
 void DBConnection::getParticles(std::vector<Particle>& particles) {
@@ -372,26 +375,21 @@ void DBConnection::getParticles(std::vector<Particle>& particles) {
 void DBConnection::clearParticles() {
     printf("Clearing particles ... ");
     boost::mysql::results result;
-    query("TRUNCATE particles", result);
+	query("SET FOREIGN_KEY_CHECKS = 0", result);
     query("TRUNCATE particle_times", result);
+    query("TRUNCATE particles", result);
+	query("SET FOREIGN_KEY_CHECKS = 1", result);
     printf("Done\n");
 }
 
-void DBConnection::addParticleTime(Particle particle, int deviceId, std::chrono::time_point expectedTime) {
+void DBConnection::addParticleTime(Particle particle, int deviceId, TimePoint expectedTime) {
     try {
         fmt::print("Adding particle time for particle {} for device {} ... ", particle.id, deviceId);
         boost::mysql::results result;
         _conn.execute(_conn.prepare_statement(
             "INSERT INTO particle_times (particle_id, device_id, expected_time) VALUES(?,?,?)"
-        ).bind(particle->id, deviceId, boost::mysql::datetime(expectedTime)), result);
-        Particle particle;
-        query("SELECT LAST_INSERT_ID()", result);
-        particle.id = result.rows()[0][0].as_uint64();
-        particle.originDeviceId = update->deviceId();
-        particle.shortTermStateId = stsId;
-        particle.weight = weight;
+        ).bind(particle.id, deviceId, boost::mysql::datetime(expectedTime)), result);
         printf("Done\n");
-        return particle;
     }
     catch (const boost::mysql::error_with_diagnostics& err) {
         std::cerr << "Error: " << err.what() << '\n'
@@ -617,14 +615,14 @@ void DBConnection::clearShortTermStates() {
     printf("Done\n");
 }
 
-PathGraphPtr DBConnection::getPath(ShortTermStatePtr sts, int period) {
+PathGraphPtr DBConnection::getPath(ShortTermStatePtr sts, int period, bool silent) {
     try {
-        fmt::print("Getting path for sts {} period {} ... ", sts->id, period);
+        if (!silent) fmt::print("Getting path for sts {} period {} ... ", sts->id, period);
         boost::mysql::results result;
         _conn.execute(_conn.prepare_statement(
             "SELECT path FROM paths WHERE short_term_state_key=? AND period=?"
         ).bind(sts->id, period), result);
-        printf("Done\n");
+       if (!silent) printf("Done\n");
         if (result.rows().size() > 0) {
             return PathGraphPtr(new PathGraph(sts->id, -1, period, result.rows()[0][0].as_blob()));
         } else {
@@ -861,7 +859,7 @@ void DBConnection::initGlobals() {
     query("INSERT INTO globals (period) VALUES(1)", r);
 }
 
-std::chrono::time_point DBConnection::getTime() {
+TimePoint DBConnection::getTime() {
     boost::mysql::results r;
     query("SELECT CURRENT_TIMESTAMP()", r);
     return r.rows()[0][0].as_datetime().as_time_point();
