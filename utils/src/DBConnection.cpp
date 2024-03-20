@@ -127,6 +127,13 @@ void DBConnection::createTables() {
         weight FLOAT, \
         CONSTRAINT FK_sts2 FOREIGN KEY (short_term_state_id) REFERENCES short_term_states(id)\
     )", r);
+    query("CREATE TABLE IF NOT EXISTS particle_times (\
+        particle_id INT, \
+        device_id INT, \
+        expected_time TIMESTAMP, \
+        UNIQUE KEY particle_times_uid (particle_id, device_id), \
+        CONSTRAINT FK_part FOREIGN KEY (particle_id) REFERENCES particles(id)\
+    )", r);
     query(fmt::format("CREATE TABLE IF NOT EXISTS paths (\
         id INT AUTO_INCREMENT PRIMARY KEY, \
         path BLOB({}), \
@@ -155,6 +162,7 @@ void DBConnection::clearTables() {
     query("TRUNCATE students", r);
     query("TRUNCATE updates", r);
     query("TRUNCATE particles", r);
+    query("TRUNCATE particle_times", r);
     query("TRUNCATE paths", r);
     query("TRUNCATE schedules", r);
 	query("SET FOREIGN_KEY_CHECKS = 1", r);
