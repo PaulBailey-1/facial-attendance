@@ -86,12 +86,18 @@ void Map::generatePathMaps(std::vector<std::set<int>>& matches) {
     printf("Done\n");
 }
 
-void Map::getDeviceConnections(std::vector<std::set<int>>& conns) {
-	for (DeviceView dev : devs) {
+void Map::getDeviceConnections(std::vector<std::set<int>>& conns, Eigen::MatrixXd& distances) {
+    distances = Eigen::MatrixXd(devs.size(), devs.size());
+	for (int i = 0; i < devs.size(); i++) {
+        DeviceView dev = devs[i];
         std::set<int> connectedDevs;
         iGrid pathMap = iGrid();
         createPathMap(pathMap, dev.pos, connectedDevs, dev.id);
         conns.push_back(connectedDevs);
+        for (auto j = connectedDevs.begin(); j != connectedDevs.end(); j++) {
+            glm::ivec2 ipos = { round(devs[*j].pos.x), round(devs[*j].pos.y) };
+            distances(i, *j) = pathMap[ipos.x][ipos.y];
+        }
 	}
 }
 

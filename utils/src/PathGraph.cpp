@@ -1,4 +1,6 @@
 
+#include <fmt/core.h>
+
 #include "utils/PathGraph.h"
 
 std::vector<std::set<int>> PathGraph::_graph;
@@ -30,7 +32,7 @@ void PathGraph::initGraph(std::string mapPath, std::string cachePath) {
         printf("Getting connections\n");
 
         Map map(mapPath);
-	    map.getDeviceConnections(_graph);
+	    map.getDeviceConnections(_graph, _distances);
 
         printf("Writing to cache\n");
         std::ofstream cacheOut;
@@ -45,21 +47,48 @@ void PathGraph::initGraph(std::string mapPath, std::string cachePath) {
                 }
                 cacheOut << "\n";
             }
+
+            cacheOut << "distances\n";
+            for (int row = 0; row < _distances.rows(); row++) {
+                for (int col = 0; col < _distances.cols(); col++) {
+                    cacheOut << std::to_string(_distances(row, col));
+                    if (col != _distances.cols() - 1) {
+                        cacheOut << ", ";
+                    }
+                }
+                cacheOut << "\n";
+            }
         }
         cacheOut.close();
     } else {
         printf("Reading cache\n");
         std::string line;
+        bool readingDistances = false;
+        int distancesRow = 0;
         while (1) {
             std::getline(cacheIn, line);
+            if (line == "distances") {
+                readingDistances = true;
+                _distances = Eigen::MatrixXd::Zeros(_graph.size(), _graph.size());
+                continue;
+            }
             if (cacheIn.eof()) break;
             std::stringstream s(line);
             std::string num;
-            std::set<int> conns;
-            while (std::getline(s, num, ',')) {
-                conns.emplace(stoi(num));
+            if (!readingDistances) {
+                std::set<int> conns;
+                while (std::getline(s, num, ',')) {
+                    conns.emplace(stoi(num));
+                }
+                _graph.push_back(conns);
+            } else {
+                int col = 0;
+                while (std::getline(s, num, ',')) {
+                    _distances(distancesRow, col) = stoif(num);
+                    col++;
+                }
+                distancesRow++;
             }
-            _graph.push_back(conns);
         }
         cacheIn.close();
     }
@@ -81,6 +110,14 @@ std::set<int> PathGraph::getGraphEdges(int node) {
         return _graph[node];
     }
     return std::set<int>();
+}
+
+double PathGraph::getGraphEdgeLength(int from, int to) {
+    double distance = _distances(from, to);
+    if (distance == 0.0) {
+        fmt::println("PathGraph:getGraphEdgeLength - Error: Can't get edge length from {} to {}", from, to);
+    }
+    return distance;
 }
 
 void PathGraph::start(int node) {

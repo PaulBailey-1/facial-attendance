@@ -3,6 +3,7 @@
 #include <vector>
 #include <set>
 
+#include <Eigen/dense>
 #include <glm/glm.hpp>
 #include <cinder/Shape2d.h>
 #include <cinder/Xml.h>
@@ -45,7 +46,7 @@ public:
 	Map(std::string filename);
 
 	void generatePathMaps(std::vector<std::set<int>>& matches = std::vector<std::set<int>>(1));
-	void getDeviceConnections(std::vector<std::set<int>>& conns);
+	void getDeviceConnections(std::vector<std::set<int>>& conns, Eigen::MatrixXd& distances);
 
 	const iGrid* getPathMap(int room) const { return &_pathMaps[room]; }
 

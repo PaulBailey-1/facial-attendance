@@ -5,8 +5,8 @@
 
 #include "VisualizerApp.h"
 
-#define PATH
-// #define FACES
+// #define PATH
+#define FACES
 
 VisualizerApp::VisualizerApp() {
 }

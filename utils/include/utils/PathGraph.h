@@ -25,6 +25,7 @@ public:
     static void initGraph(std::string mapPath, std::string cachePath);
     static size_t getPathByteSize();
     static std::set<int> getGraphEdges(int node);
+    static double getGraphEdgeLength(int from, int to);
 
     void start(int node);
     void update(int lastNode, int nextNode);
@@ -38,6 +39,7 @@ public:
 private:
 
     static std::vector<std::set<int>> _graph;
+    static Eigen::MatrixXd _distances;
 
     Eigen::VectorXi _depths;
 
