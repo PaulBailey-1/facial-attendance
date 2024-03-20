@@ -143,6 +143,19 @@ int PathGraph::getFinalDev() {
     return lowest;
 }
 
+int PathGraph::getNext(int node) {
+    std::set<int> conns = _graph[node];
+    int lowest = -1;
+    int lowestDepth = 0;
+    for (auto i = conns.begin(); i != conns.end(); i++) {
+        if (_depths[*i] < lowestDepth) {
+            lowest = *i;
+            lowestDepth = _depths[*i];
+        }
+    }
+    return lowest;
+}
+
 const boost::span<UCHAR> PathGraph::getPathSpan() const { return boost::span<UCHAR>(reinterpret_cast<UCHAR*>(const_cast<int*>(_depths.data())), getPathByteSize()); }
 const Eigen::VectorXi& PathGraph::getDepths() const {return _depths;}
 int PathGraph::getDepth(int node) {return _depths(node);}

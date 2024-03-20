@@ -35,9 +35,11 @@ public:
     void getUpdatesPath(int stsId, std::vector<int>& devPath);
     void clearUpdates();
 
-    void createParticle(int stsId, UpdatePtr update, double weight);
+    Particle createParticle(int stsId, UpdatePtr update, double weight);
     void getParticles(std::vector<Particle>& particles);
     void clearParticles();
+
+    void addParticleTime();
 
     LongTermStatePtr getLongTermState(int id);
     void getLongTermStates(std::vector<LongTermStatePtr>& states);
@@ -72,6 +74,8 @@ public:
     void pushStudentData(UpdatePtr data, int studentId);
 
     void initGlobals();
+
+    std::chrono::time_point getTime();
 
 private:
 

@@ -189,6 +189,7 @@ struct Schedule {
 };
 
 struct Particle {
+	int id;
 	int originDeviceId;
 	int shortTermStateId;
 	float weight;

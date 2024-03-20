@@ -333,14 +333,21 @@ void DBConnection::clearUpdates() {
     printf("Done\n");
 }
 
-void DBConnection::createParticle(int stsId, UpdatePtr update, double weight) {
+Particle DBConnection::createParticle(int stsId, UpdatePtr update, double weight) {
     try {
-    fmt::print("Creating particle for sts {} on device {} ... ", stsId, update->deviceId);
+        fmt::print("Creating particle for sts {} on device {} ... ", stsId, update->deviceId);
         boost::mysql::results result;
         _conn.execute(_conn.prepare_statement(
             "INSERT INTO particles (origin_device_id, short_term_state_id, weight) VALUES(?,?,?)"
         ).bind(update->deviceId, stsId, weight), result);
+        Particle particle;
+        query("SELECT LAST_INSERT_ID()", result);
+        particle.id = result.rows()[0][0].as_uint64();
+        particle.originDeviceId = update->deviceId();
+        particle.shortTermStateId = stsId;
+        particle.weight = weight;
         printf("Done\n");
+        return particle;
     }
     catch (const boost::mysql::error_with_diagnostics& err) {
         std::cerr << "Error: " << err.what() << '\n'
@@ -366,9 +373,31 @@ void DBConnection::clearParticles() {
     printf("Clearing particles ... ");
     boost::mysql::results result;
     query("TRUNCATE particles", result);
+    query("TRUNCATE particle_times", result);
     printf("Done\n");
 }
 
+void DBConnection::addParticleTime(Particle particle, int deviceId, std::chrono::time_point expectedTime) {
+    try {
+        fmt::print("Adding particle time for particle {} for device {} ... ", particle.id, deviceId);
+        boost::mysql::results result;
+        _conn.execute(_conn.prepare_statement(
+            "INSERT INTO particle_times (particle_id, device_id, expected_time) VALUES(?,?,?)"
+        ).bind(particle->id, deviceId, boost::mysql::datetime(expectedTime)), result);
+        Particle particle;
+        query("SELECT LAST_INSERT_ID()", result);
+        particle.id = result.rows()[0][0].as_uint64();
+        particle.originDeviceId = update->deviceId();
+        particle.shortTermStateId = stsId;
+        particle.weight = weight;
+        printf("Done\n");
+        return particle;
+    }
+    catch (const boost::mysql::error_with_diagnostics& err) {
+        std::cerr << "Error: " << err.what() << '\n'
+            << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
+    }
+}
 
 LongTermStatePtr DBConnection::getLongTermState(int id) {
     try {
@@ -830,4 +859,10 @@ void DBConnection::pushStudentData(UpdatePtr data, int studentId) {
 void DBConnection::initGlobals() {
     boost::mysql::results r;
     query("INSERT INTO globals (period) VALUES(1)", r);
+}
+
+std::chrono::time_point DBConnection::getTime() {
+    boost::mysql::results r;
+    query("SELECT CURRENT_TIMESTAMP()", r);
+    return r.rows()[0][0].as_datetime().as_time_point();
 }

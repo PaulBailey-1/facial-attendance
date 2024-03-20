@@ -31,6 +31,7 @@ public:
     void update(int lastNode, int nextNode);
     void fuse(std::shared_ptr<PathGraph> other);
     int getFinalDev();
+    int getNext(int node);
 
 	const boost::span<UCHAR> getPathSpan() const;
     const Eigen::VectorXi& getDepths() const;

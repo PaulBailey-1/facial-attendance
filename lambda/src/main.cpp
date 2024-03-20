@@ -18,9 +18,16 @@
 DBConnection db;
 
 FFMat R = FFMat::Zero();
+double speed = 1.0;
 
-void computeParticleTimes(int particleId, PathGraphPtr path) {
-    
+void computeParticleTimes(Particle particle, PathGraphPtr path) {
+    std::chrono::time_point startTime = db.getTime();
+    int node = particle.id;
+    int nextNode = -1;
+    while(nextNode = path->getNext(node) != -1) {
+        double distance = PathGraph::getGraphEdgeLength(node, nextNode);
+        db.addParticleTime(particle, node, startTime + std::chrono::milliseconds((distance / speed) * 1000));
+    }
 }
 
 void getFacialMatches(UpdatePtr update, const std::vector<ShortTermStatePtr>& pool, std::vector<ShortTermStatePtr>& matches, std::vector<double>& matchDistances) {
@@ -133,9 +140,9 @@ void processUpdate(UpdatePtr update) {
         db.updateShortTermState(match);
 
         double weight = 1 - (matchDistances[i] / MATCHING_THRESH); // 0 to 1
-        int particleId = db.createParticle(match->id, update, weight);
+        Particle particle = db.createParticle(match->id, update, weight);
 
-        computeParticleTimes(particleId, path);
+        computeParticleTimes(particle, path);
 
     }
 
