@@ -25,7 +25,7 @@ private:
 	std::vector<Device*> _devices;
 	std::vector<EntityPtr> _entities;
 
-	void uploadDataSet(std::string filename, int max = -1);
+	void uploadDataSet(std::string filename, int max = -1, bool startingData = false);
 	void getSchedules();
 
 };

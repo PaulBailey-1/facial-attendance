@@ -13,7 +13,7 @@
 #include <utils/EntityState.h>
 #include <utils/PathGraph.h>
 
-#define MATCHING_THRESH 130.0
+#define MATCHING_THRESH 140.0
 
 DBConnection db;
 
@@ -165,45 +165,9 @@ void processUpdate(UpdatePtr update) {
     // db.updateUpdate(update);
 }
 
-void loadUpdateCov(std::string filename) {
-    fmt::print("Loading update covariance matrix from {} ... ", filename);
-    try {
-        std::ifstream file(filename);
-        int updateNum = 0;
-        int entity = 0;
-        if (file.is_open()) {
-            std::string line;
-            int row = 0;
-            while (1) {
-                std::getline(file, line);
-                if (file.eof()) break;
-                std::stringstream s(line);
-                std::string num;
-                int col = 0;
-                while (std::getline(s, num, ',')) {
-                    if (row == col)
-                       R(row, col) = stof(num);
-                    col++;
-                }
-                if (col != FACE_VEC_SIZE) {
-                    throw std::runtime_error("invalid column dimension\n");
-                }
-                row++;
-            }
-            if (row != FACE_VEC_SIZE) {
-                throw std::runtime_error("invalid row dimension\n");
-            }
-        }
-        printf("Done\n");
-    }
-    catch (const std::exception& err) {
-        std::cerr << "Failed to read update covariance: " << err.what() << std::endl;
-    }
-}
-
 int main() {
 
-    loadUpdateCov("../../../updateCov.csv");
+    loadUpdateCov("../../../updateCov.csv", R);
 
     db.connect();
     //db.createTables();

@@ -36,12 +36,15 @@ void Display::update() {
 
 	static int limiter = 0;
 
-	if (limiter == 5) {
+	if (limiter == 10) {
 		limiter = 0;
-		// _shortTermStates.clear();
-		// _db.getShortTermStates(_shortTermStates, true);
+		_shortTermStates.clear();
+		_db.getShortTermStates(_shortTermStates, true);
 		_particles.clear();
 		_db.getParticles(_particles);
+		if (_shortTermStates.size() > 0) {
+			_pathGraph = _db.getPath(_shortTermStates[0], _db.getPeriod());
+		}
 	}
 	limiter++;
 }
@@ -73,11 +76,13 @@ void Display::draw() {
 		ci::gl::drawSolid(shape);
 	}
 
+	// Draw device views
 	ci::gl::color(ci::ColorA(170/255.0, 70/255.0, 190/255.0, 0.5));
 	for (const DeviceView devView : _map->devs) {
 		ci::gl::drawSolid(devView.view);
 	}
 
+	// Draw doors
 	ci::gl::color(ci::Color(90/255.0, 65/255.0, 55/255.0));
 	for (const Door &door : _map->doors) {
 		ci::gl::ScopedModelMatrix model;
@@ -97,6 +102,7 @@ void Display::draw() {
 	//ci::gl::scale(1/scale, 1/scale);
 	//ci::gl::color(ci::Color::black());
 
+	// Draw flood fill
 	//if (_entities->size() > 0) {
 	//	const iGrid& pathMap = *(_map->getPathMap((*_entities)[0]->getNextDoor(1)));
 	//	for (int x = 0; x < pathMap.size(); x+=4) {
@@ -107,6 +113,7 @@ void Display::draw() {
 	//	}
 	//}
 	
+	// Draw entities
 	for (EntityPtr entity : *_entities) {
 		ci::gl::ScopedModelMatrix model;
 		ci::gl::color(ci::Color(ci::CM_HSV, entity->id / (double) _entities->size(), 1.0, 1.0));
@@ -115,6 +122,7 @@ void Display::draw() {
 		static glm::vec2 points[3] = { {-1.0, 1.0}, {-1.0, -1.0}, {1.0, 0.0} };
 		ci::gl::drawSolidTriangle(points);
 
+		// Draw entity ids
 		//ci::gl::scale(1 / scale, 1 / scale);
 		//ci::gl::color(ci::Color::black());
 		//ci::gl::Texture2dRef textTexture = ci::gl::Texture2d::create(tboxBase.text(std::to_string(entity->id)).render());
@@ -125,6 +133,7 @@ void Display::draw() {
 		//ci::gl::drawSolidCircle(entity->getPos(), 1.0);
 	}
 
+	// Draw sts as crosses
 	// for (ShortTermStatePtr sts : _shortTermStates) {
 	// 	ci::gl::ScopedModelMatrix model;
 	// 	if (sts->longTermStateKey == -1) {
@@ -137,12 +146,32 @@ void Display::draw() {
 	// 	ci::gl::drawLine({0.0, 1.0}, {0.0, -1.0});
 	// }
 
+	// Draw Particles as circles
 	std::vector<float> offsets(_map->devs.size());
 	for (Particle par : _particles) {
 		ci::gl::color(ci::Color(ci::CM_HSV, par.shortTermStateId / 20.0, par.weight, 1.0));
 		offsets[par.originDeviceId] += 1.5;
 		const DeviceView& dev = _map->devs[par.originDeviceId]; 
 		ci::gl::drawSolidCircle(dev.pos + glm::rotate(glm::vec2(offsets[par.originDeviceId], 0.0), -dev.angle), 1.0);
+	}
+
+	if (_pathGraph) {
+		// Draw path graph of first sts
+		ci::gl::color(ci::Color::black());
+		for (int i = 0; i < _map->devs.size(); i++) {
+			std::set<int> edges = PathGraph::getGraphEdges(i);
+			glm::vec2 nodePos = _map->devs[i].pos;
+			for (auto e = edges.begin(); e != edges.end(); e++) {
+				ci::gl::drawLine(nodePos, _map->devs[*e].pos);
+			}
+
+			ci::gl::scale(1 / scale, 1 / scale);
+			// ci::gl::color(ci::Color(255, 0, 0));
+			ci::gl::Texture2dRef textTexture = ci::gl::Texture2d::create(tboxBase.text(std::to_string(_pathGraph->getDepth(i))).render());
+			glm::vec2 txtPos = (nodePos * scale) - glm::vec2(tboxBase.getSize()) * 0.5f + glm::rotate(glm::vec2(10.0, 0.0), -_map->devs[i].angle);
+			ci::gl::draw(textTexture, txtPos);
+			ci::gl::scale(scale, scale);
+		}
 	}
 
 }

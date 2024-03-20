@@ -14,6 +14,7 @@ typedef unsigned char UCHAR;
 typedef Eigen::Matrix<float, FACE_VEC_SIZE, 1> FFVec;
 typedef Eigen::Matrix<float, FACE_VEC_SIZE, FACE_VEC_SIZE> FFMat;
 
+void loadUpdateCov(std::string filename, FFMat& R);
 double l2Distance(const FFVec& first, const FFVec& second);
 
 class Update;
@@ -27,6 +28,12 @@ public:
 
 	EntityState(int id_) {
 		id = id_;
+	}
+
+	EntityState(int id_, FFVec facialFeatures_, FFMat facialFeaturesCov_) {
+		id = id_;
+		facialFeatures = facialFeatures_;
+		facialFeaturesCov = facialFeaturesCov_;
 	}
 
 	EntityState(int id_, boost::span<const UCHAR> facialFeatures_) {
@@ -69,7 +76,8 @@ public:
 
 	void step(float dt);
 
-	int getNextDoor(int period) const { return schedule[period - 1]; }
+	int 
+	getNextDoor(int period) const { return schedule[period - 1]; }
 	const glm::vec2& getPos() const { return _pos; }
 	float getHeading() const { return _heading; }
 
@@ -109,6 +117,10 @@ class LongTermState : public EntityState {
 public:
 
 	int studentId;
+
+	LongTermState(int id_, FFVec facialFeatures_, FFMat facialFeaturesCov_, int studentId_) : EntityState(id_, facialFeatures_, facialFeaturesCov_) {
+		studentId = studentId_;
+	}
 
 	LongTermState(int id_, boost::span<const UCHAR> facialFeatures_, boost::span<const UCHAR> facialFeaturesCov_, int studentId_) : EntityState(id_, facialFeatures_, facialFeaturesCov_) {
 		studentId = studentId_;

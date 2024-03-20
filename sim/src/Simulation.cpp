@@ -18,7 +18,7 @@ Simulation::Simulation() {
 	_map = Map("../../../map.xml");
 	_map.generatePathMaps();
 
-	uploadDataSet("../../../dataset.csv", 1);
+	uploadDataSet("../../../dataset.csv", 1, true);
 	_db.getEntities(_entities);
 	srand(56789765);
 	getSchedules();
@@ -62,15 +62,24 @@ void Simulation::run() {
 	}
 }
 
-void Simulation::uploadDataSet(std::string filename, int max) {
+void Simulation::uploadDataSet(std::string filename, int max, bool startingData) {
 
 	if (_db.getEntityFeatures(EntityPtr(new Entity(1)), 0)) {
 		return;
 	}
 
+	FFMat R = FFMat::Zero();
+	if (startingData) {
+	    loadUpdateCov("../../../updateCov.csv", R);
+	}
+
 	std::vector<std::vector<std::vector<float>>> dataSet;
 	std::vector<std::vector<float>> currentEntity;
-	fmt::print("Uploading dataset to db from {} ... ", filename);
+	fmt::println("Uploading dataset to db from {} ... ", filename);
+
+	if (startingData) {
+		fmt::println("Uploading starting data ... ");
+	}
 
 	try {
 		std::ifstream file(filename);
@@ -105,8 +114,14 @@ void Simulation::uploadDataSet(std::string filename, int max) {
 				}
 				if (updateNum == 0) {
 					entity = _db.addStudent();
+					
+					if (startingData) {
+						LongTermStatePtr lts = LongTermStatePtr(new LongTermState(-1, data->facialFeatures, R, entity));
+						_db.addLongTermState(lts);
+					}
 				}
 				_db.pushStudentData(data, entity);
+
 				updateNum++;
 				if (updateNum == imgs) {
 					updateNum = 0;

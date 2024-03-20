@@ -24,20 +24,22 @@ public:
 
     static void initGraph(std::string mapPath, std::string cachePath);
     static size_t getPathByteSize();
+    static std::set<int> getGraphEdges(int node);
 
     void start(int node);
     void update(int lastNode, int nextNode);
     void fuse(std::shared_ptr<PathGraph> other);
     int getFinalDev();
 
-	const boost::span<UCHAR> getPathSpan() const { return boost::span<UCHAR>(reinterpret_cast<UCHAR*>(const_cast<float*>(_depths.data())), getPathByteSize()); }
-    const Eigen::VectorXf& getDepths() const {return _depths;}
+	const boost::span<UCHAR> getPathSpan() const;
+    const Eigen::VectorXi& getDepths() const;
+    int getDepth(int node);
     
 private:
 
     static std::vector<std::set<int>> _graph;
 
-    Eigen::VectorXf _depths;
+    Eigen::VectorXi _depths;
 
 };
 

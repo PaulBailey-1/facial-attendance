@@ -41,6 +41,7 @@ public:
 
     LongTermStatePtr getLongTermState(int id);
     void getLongTermStates(std::vector<LongTermStatePtr>& states);
+    int addLongTermState(LongTermStatePtr lts);
     int createLongTermState(ShortTermStatePtr sts);
     void updateLongTermState(LongTermStatePtr lts);
     void setLongTermStateStudent(LongTermStatePtr lts);

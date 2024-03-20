@@ -12,7 +12,7 @@ PathGraph::PathGraph(int stsId_, int ltsId_, int period_, boost::span<const unsi
         printf("PathGraph::PathGraph - Error: PathGraph uninitlized\n");
     }
 
-    _depths = Eigen::VectorXf::Zero(_graph.size());
+    _depths = Eigen::VectorXi::Zero(_graph.size());
     if (path.size() > 0) {
 	    memcpy(_depths.data(), path.data(), path.size_bytes());
     }
@@ -73,6 +73,16 @@ size_t PathGraph::getPathByteSize() {
     return _graph.size() * sizeof(float);
 }
 
+std::set<int> PathGraph::getGraphEdges(int node) {
+    if (_graph.size() == 0) {
+        printf("PathGraph:getPathByteSize - Error: PathGraph uninitalized\n");
+    }
+    if (_graph.size() > node) {
+        return _graph[node];
+    }
+    return std::set<int>();
+}
+
 void PathGraph::start(int node) {
     _depths[node] = -1;
 }
@@ -95,3 +105,7 @@ int PathGraph::getFinalDev() {
     }
     return lowest;
 }
+
+const boost::span<UCHAR> PathGraph::getPathSpan() const { return boost::span<UCHAR>(reinterpret_cast<UCHAR*>(const_cast<int*>(_depths.data())), getPathByteSize()); }
+const Eigen::VectorXi& PathGraph::getDepths() const {return _depths;}
+int PathGraph::getDepth(int node) {return _depths(node);}

@@ -3,6 +3,42 @@
 
 #include "utils/EntityState.h"
 
+void loadUpdateCov(std::string filename, FFMat& R) {
+    fmt::print("Loading update covariance matrix from {} ... ", filename);
+    try {
+        std::ifstream file(filename);
+        int updateNum = 0;
+        int entity = 0;
+        if (file.is_open()) {
+            std::string line;
+            int row = 0;
+            while (1) {
+                std::getline(file, line);
+                if (file.eof()) break;
+                std::stringstream s(line);
+                std::string num;
+                int col = 0;
+                while (std::getline(s, num, ',')) {
+                    if (row == col)
+                       R(row, col) = stof(num);
+                    col++;
+                }
+                if (col != FACE_VEC_SIZE) {
+                    throw std::runtime_error("invalid column dimension\n");
+                }
+                row++;
+            }
+            if (row != FACE_VEC_SIZE) {
+                throw std::runtime_error("invalid row dimension\n");
+            }
+        }
+        printf("Done\n");
+    }
+    catch (const std::exception& err) {
+        std::cerr << "Failed to read update covariance: " << err.what() << std::endl;
+    }
+}
+
 double l2Distance(const FFVec& first, const FFVec& second) {
     float distance = 0.0;
     for (int j = 0; j < FACE_VEC_SIZE; j++) {

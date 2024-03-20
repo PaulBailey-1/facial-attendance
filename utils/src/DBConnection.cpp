@@ -398,6 +398,24 @@ void DBConnection::getLongTermStates(std::vector<LongTermStatePtr> &states) {
     printf("Done\n");
 }
 
+int DBConnection::addLongTermState(LongTermStatePtr lts) {
+    try {
+        fmt::print("Adding long term state for entity {} ... ", lts->studentId);
+        boost::mysql::results result;
+        _conn.execute(_conn.prepare_statement(
+            "INSERT INTO long_term_states (mean_facial_features, cov_facial_features, student_id) VALUES(?,?,?)"
+        ).bind(lts->getFacialFeatures(), lts->getFacialFeaturesCovSpan(), lts->studentId), result);
+        query("SELECT LAST_INSERT_ID()", result);
+        printf("Done\n");
+        return result.rows()[0][0].as_uint64();
+    }
+    catch (const boost::mysql::error_with_diagnostics& err) {
+        std::cerr << "Error: " << err.what() << '\n'
+            << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
+    }
+    return -1;
+}
+
 int DBConnection::createLongTermState(ShortTermStatePtr sts) {
     try {
         printf("Creating long term state ... ");

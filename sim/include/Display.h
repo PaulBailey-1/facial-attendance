@@ -41,6 +41,7 @@ private:
 	DBConnection _db;
 	std::vector<ShortTermStatePtr> _shortTermStates;
 	std::vector<Particle> _particles;
+	PathGraphPtr _pathGraph;
 
 	ci::Font _font;
 
