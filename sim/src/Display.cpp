@@ -40,8 +40,10 @@ void Display::update() {
 		limiter = 0;
 		_shortTermStates.clear();
 		_db.getShortTermStates(_shortTermStates, true);
+
 		_particles.clear();
 		_db.getParticles(_particles);
+
 		if (_shortTermStates.size() > 0 && _shortTermStates[0]->longTermStateKey != -1) {
 			_pathGraph = _db.getLtsPath(_shortTermStates[0]->longTermStateKey, _db.getPeriod());
 		}
@@ -155,7 +157,7 @@ void Display::draw() {
 	for (Particle par : _particles) {
 		ci::gl::color(ci::Color(ci::CM_HSV, par.shortTermStateId / 20.0, par.weight, 1.0));
 		offsets[par.originDeviceId] += 1.5;
-		const DeviceView& dev = _map->devs[par.originDeviceId]; 
+		const DeviceView& dev = _map->devs[par.originDeviceId];
 		ci::gl::drawSolidCircle(dev.pos + glm::rotate(glm::vec2(offsets[par.originDeviceId], 0.0), -dev.angle), 1.0);
 	}
 

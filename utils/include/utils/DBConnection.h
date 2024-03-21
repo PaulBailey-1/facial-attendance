@@ -53,7 +53,7 @@ public:
     void getShortTermStates(std::vector<ShortTermStatePtr>& states, bool small = false);
     void getLinkedLongTermStateIds(std::set<int>& ids);
     ShortTermStatePtr getLastShortTermState(int ltsId);
-    int createShortTermState(UpdateCPtr update, LongTermStatePtr ltState = nullptr);
+    ShortTermStatePtr createShortTermState(UpdateCPtr update, LongTermStatePtr ltState = nullptr);
     void updateShortTermState(ShortTermStatePtr state);
     void clearShortTermStates();
 

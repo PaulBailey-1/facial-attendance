@@ -20,6 +20,7 @@ struct DeviceView {
 	int id;
 	glm::vec2 pos;
 	float angle;
+	int pair = -1;
 
 	ci::Shape2d view;
 

@@ -190,9 +190,14 @@ struct Schedule {
 	std::vector<int> rooms;
 };
 
+typedef std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<std::int64_t, std::micro>> TimePoint;
+
 struct Particle {
 	int id;
 	int originDeviceId;
 	int shortTermStateId;
 	float weight;
+	int nextDeviceId;
+	TimePoint expectedTime;
+	TimePoint lastTime;
 };

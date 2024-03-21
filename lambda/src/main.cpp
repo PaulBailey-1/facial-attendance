@@ -21,13 +21,15 @@ FFMat R = FFMat::Zero();
 double speed = 1.0;
 
 void computeParticleTimes(Particle particle, PathGraphPtr path) {
+    fmt::println("Computing particle times for particle {}", particle.id);
     std::chrono::time_point startTime = db.getTime();
     int node = particle.originDeviceId;
-    int nextNode = -1;
-    while (nextNode = path->getNext(node) != -1) {
+    int nextNode = path->getNext(node);
+    while (nextNode != -1 && nextNode != node) {
         double distance = PathGraph::getGraphEdgeLength(node, nextNode);
-        db.addParticleTime(particle, node, startTime + std::chrono::milliseconds(int((distance / speed) * 1000)));
+        db.addParticleTime(particle, nextNode, startTime + std::chrono::milliseconds(int((distance / speed) * 1000)));
         node = nextNode;
+        nextNode = path->getNext(node);
     }
 }
 
@@ -141,7 +143,12 @@ void processUpdate(UpdatePtr update) {
         double weight = 1 - (matchDistances[i] / MATCHING_THRESH); // 0 to 1
         Particle particle = db.createParticle(match->id, update, weight);
 
-        computeParticleTimes(particle, path);
+        if (match->longTermStateKey != -1) {
+            PathGraphPtr ltsPath = db.getLtsPath(match->longTermStateKey, period);
+            if (ltsPath) {
+                computeParticleTimes(particle, ltsPath);
+            }
+        }
 
     }
 
@@ -168,10 +175,19 @@ void processUpdate(UpdatePtr update) {
 
     if (matches.size() == 0) {
         fmt::print("No match found\n");
-        int stsId = db.createShortTermState(update);
-        db.createParticle(stsId, update, 1.0);
+        ShortTermStatePtr sts = db.createShortTermState(update);
+        Particle particle = db.createParticle(sts->id, update, 1.0);
 
-        ShortTermStatePtr sts = ShortTermStatePtr( new ShortTermState(stsId));
+        LongTermStatePtr ltMatch = getFacialMatch(sts, longTermStates);
+        if (ltMatch != nullptr) {
+            sts->longTermStateKey = ltMatch->id;
+            PathGraphPtr ltsPath = db.getLtsPath(sts->longTermStateKey, period);
+            if (ltsPath) {
+                computeParticleTimes(particle, ltsPath);
+            }
+        }
+        db.updateShortTermState(sts);
+
         PathGraphPtr path = db.getPath(sts, period);
         path->start(update->deviceId);
         db.updatePath(path);

@@ -47,6 +47,15 @@ Map::Map(std::string filename) {
 		doors.push_back(Door{ id, {x, y}, angle });
 	}
 
+    for (int i = 0; i < devs.size(); i++) {
+        for (int j = i + 1; j < devs.size(); j++) {
+            if (devs[i].pos == devs[j].pos) {
+                devs[i].pair = j;
+                devs[j].pair = i;
+            }
+        }
+    }
+
     printf("Done\n");
 }
 
@@ -101,6 +110,12 @@ void Map::getDeviceConnections(std::vector<std::set<int>>& conns, Eigen::MatrixX
             distances(i, j) = pathMap[ipos.x][ipos.y];
         }
 	}
+	for (int i = 0; i < devs.size(); i++) {
+        if (devs[i].pair != -1) {
+            conns[i].merge(conns[devs[i].pair]);
+            conns[devs[i].pair] = conns[i];
+        }
+    }
 }
 
 const iGrid* Map::getPathMap(int room) const { return &_pathMaps[room]; }
@@ -164,7 +179,11 @@ void Map::createPathMap(iGrid& pathMap, glm::ivec2 end, std::set<int>& boundingD
                                     pathMapCopy[x + i][y + j] = pathMap[x][y] + 1;
                                 }
                                 if (bounding && adjVal < -2) {
-                                    boundingDevs.insert(-adjVal - 3);
+                                    int devId = -adjVal - 3;
+                                    boundingDevs.insert(devId);
+                                    if (devs[devId].pair != -1) {
+                                        boundingDevs.insert(devs[devId].pair);
+                                    }
                                 }
                             }
                         }

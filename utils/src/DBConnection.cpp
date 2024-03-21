@@ -127,6 +127,7 @@ void DBConnection::createTables() {
         origin_device_id INT, \
         short_term_state_id INT, \
         weight FLOAT, \
+        start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP, \
         CONSTRAINT FK_sts2 FOREIGN KEY (short_term_state_id) REFERENCES short_term_states(id)\
     )", r);
     query("CREATE TABLE IF NOT EXISTS particle_times (\
@@ -359,16 +360,42 @@ Particle DBConnection::createParticle(int stsId, UpdatePtr update, double weight
 }
 
 void DBConnection::getParticles(std::vector<Particle>& particles) {
-    boost::mysql::results result;
-    query("SELECT origin_device_id, short_term_state_id, weight FROM particles", result);
-    if (!result.empty()) {
-        for (const boost::mysql::row_view& row : result.rows()) {
-            Particle particle;
-            particle.originDeviceId = row[0].as_int64();
-            particle.shortTermStateId = row[1].as_int64();
-            particle.weight = row[2].as_float();
-            particles.push_back(particle);
+    try {
+        boost::mysql::results result;
+        query("SELECT id, origin_device_id, short_term_state_id, weight, start_time FROM particles", result);
+        if (!result.empty()) {
+            for (const boost::mysql::row_view& row : result.rows()) {
+                Particle particle;
+                particle.id = row[0].as_int64();
+                particle.originDeviceId = row[1].as_int64();
+                particle.shortTermStateId = row[2].as_int64();
+                particle.weight = row[3].as_float();
+
+                boost::mysql::results result2;
+                _conn.execute(_conn.prepare_statement(
+                    "SELECT device_id, expected_time FROM particle_times WHERE particle_id=? AND expected_time > CURRENT_TIMESTAMP() ORDER BY expected_time LIMIT 1"
+                ).bind(particle.id), result2);
+                if (!result2.empty() && result2.rows().size() > 0) {
+                    particle.nextDeviceId = result2.rows()[0][0].as_int64();
+                    particle.expectedTime = result2.rows()[0][1].as_datetime().as_time_point();
+                }
+                _conn.execute(_conn.prepare_statement(
+                    "SELECT expected_time FROM particle_times WHERE particle_id=? AND expected_time < CURRENT_TIMESTAMP() ORDER BY expected_time DESC LIMIT 1"
+                ).bind(particle.id), result2);
+                if (!result2.empty() && result2.rows().size() > 0) {
+                    particle.lastTime = result2.rows()[0][0].as_datetime().as_time_point();
+                } else {
+                    particle.lastTime = row[4].as_datetime().as_time_point();
+                }
+
+                particles.push_back(particle);
+            }
         }
+        
+    }
+    catch (const boost::mysql::error_with_diagnostics& err) {
+        std::cerr << "Error: " << err.what() << '\n'
+            << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
     }
 }
 
@@ -563,7 +590,7 @@ ShortTermStatePtr DBConnection::getLastShortTermState(int ltsId) {
     return nullptr;
 }
 
-int DBConnection::createShortTermState(UpdateCPtr update, LongTermStatePtr ltState) {
+ShortTermStatePtr DBConnection::createShortTermState(UpdateCPtr update, LongTermStatePtr ltState) {
     try {
         printf("Creating short term state ... ");
         boost::mysql::results result;
@@ -578,13 +605,14 @@ int DBConnection::createShortTermState(UpdateCPtr update, LongTermStatePtr ltSta
         }
         query("SELECT LAST_INSERT_ID()", result);
         printf("Done\n");
-        return result.rows()[0][0].as_uint64();
+        int stsId = result.rows()[0][0].as_uint64();
+        return ShortTermStatePtr(new ShortTermState(stsId, update->getFacialFeatures(), update->getFacialFeaturesCovSpan(), 1, update->deviceId));
     }
     catch (const boost::mysql::error_with_diagnostics& err) {
         std::cerr << "Error: " << err.what() << '\n'
             << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
     }
-    return -1;
+    return nullptr;
 }
 
 void DBConnection::updateShortTermState(ShortTermStatePtr state) {
