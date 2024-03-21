@@ -18,9 +18,9 @@ Simulation::Simulation() {
 	_map = Map("../../../map.xml");
 	_map.generatePathMaps();
 
-	uploadDataSet("../../../dataset.csv", 1, true);
+	uploadDataSet("../../../dataset.csv", -1, false);
 	_db.getEntities(_entities);
-	srand(56789765);
+	srand(5678975);
 	getSchedules();
 
 	printf("Creating devices ... ");
@@ -36,7 +36,7 @@ Simulation::Simulation() {
 }
 
 void Simulation::run() {
-	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
 	printf("Running simulation...\n");
 

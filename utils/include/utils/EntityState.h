@@ -197,7 +197,8 @@ struct Particle {
 	int originDeviceId;
 	int shortTermStateId;
 	float weight;
-	int nextDeviceId;
+	int nextDeviceId = -1;
+	int lastDeviceId = -1;
 	TimePoint expectedTime;
 	TimePoint lastTime;
 };

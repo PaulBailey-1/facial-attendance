@@ -1,5 +1,7 @@
 
 #include <string>
+#include <chrono>
+#include <fmt/core.h>
 
 #include "Display.h"
 
@@ -108,8 +110,8 @@ void Display::draw() {
 	// ci::gl::color(ci::Color::black());
 	// ci::gl::scale(1 / scale, 1 / scale);
 	// if (_entities->size() > 0) {
-	// 	// const iGrid& pathMap = *(_map->getPathMap(19));
-	// 	iGrid pathMap = _map->getDevicePathMap(19);
+	// 	const iGrid& pathMap = *(_map->getPathMap((*_entities)[0]->getNextDoor(2)));;
+	// 	// iGrid pathMap = _map->getDevicePathMap(19);
 	// 	for (int x = 0; x < pathMap.size(); x+=4) {
 	// 		for (int y = 0; y < pathMap[x].size(); y+=4) {
 	// 			ci::gl::Texture2dRef textTexture = ci::gl::Texture2d::create(tboxBase.text(std::to_string(pathMap[x][y])).render());
@@ -152,15 +154,6 @@ void Display::draw() {
 	// 	ci::gl::drawLine({0.0, 1.0}, {0.0, -1.0});
 	// }
 
-	// Draw Particles as circles
-	std::vector<float> offsets(_map->devs.size());
-	for (Particle par : _particles) {
-		ci::gl::color(ci::Color(ci::CM_HSV, par.shortTermStateId / 20.0, par.weight, 1.0));
-		offsets[par.originDeviceId] += 1.5;
-		const DeviceView& dev = _map->devs[par.originDeviceId];
-		ci::gl::drawSolidCircle(dev.pos + glm::rotate(glm::vec2(offsets[par.originDeviceId], 0.0), -dev.angle), 1.0);
-	}
-
 	if (_pathGraph) {
 		// Draw path graph of first sts
 		ci::gl::color(ci::Color::black());
@@ -178,6 +171,29 @@ void Display::draw() {
 			ci::gl::draw(textTexture, txtPos);
 			ci::gl::scale(scale, scale);
 		}
+	}
+
+	// Draw Particles as circles
+	long long currentTime = _db.getTime().time_since_epoch().count();
+	// long long currentTime = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+	std::vector<float> offsets(_map->devs.size());
+	for (Particle par : _particles) {
+		ci::gl::color(ci::Color(ci::CM_HSV, par.shortTermStateId / 20.0, par.weight, 1.0));
+		glm::vec2 pos;
+		if (par.nextDeviceId != -1) {
+			pos = _map->devs[par.nextDeviceId].pos - _map->devs[par.lastDeviceId].pos;
+			long long nextTime = par.expectedTime.time_since_epoch().count();
+			long long lastTime = par.lastTime.time_since_epoch().count();
+			double prop = (currentTime - lastTime) / (double) (nextTime - lastTime);
+			// fmt::println("current time: {} last time: {} next time: {} Prop: {} ", currentTime, lastTime, nextTime, prop);
+			pos *= prop;
+			pos += _map->devs[par.lastDeviceId].pos;
+		} else {
+			offsets[par.lastDeviceId] += 1.5;
+			const DeviceView& dev = _map->devs[par.lastDeviceId];
+			pos = dev.pos + glm::rotate(glm::vec2(offsets[par.lastDeviceId], 0.0), -dev.angle);
+		}
+		ci::gl::drawSolidCircle(pos, 1.0);
 	}
 
 }

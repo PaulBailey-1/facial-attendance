@@ -380,11 +380,13 @@ void DBConnection::getParticles(std::vector<Particle>& particles) {
                     particle.expectedTime = result2.rows()[0][1].as_datetime().as_time_point();
                 }
                 _conn.execute(_conn.prepare_statement(
-                    "SELECT expected_time FROM particle_times WHERE particle_id=? AND expected_time < CURRENT_TIMESTAMP() ORDER BY expected_time DESC LIMIT 1"
+                    "SELECT device_id, expected_time FROM particle_times WHERE particle_id=? AND expected_time < CURRENT_TIMESTAMP() ORDER BY expected_time DESC LIMIT 1"
                 ).bind(particle.id), result2);
                 if (!result2.empty() && result2.rows().size() > 0) {
-                    particle.lastTime = result2.rows()[0][0].as_datetime().as_time_point();
+                    particle.lastDeviceId = result2.rows()[0][0].as_int64();
+                    particle.lastTime = result2.rows()[0][1].as_datetime().as_time_point();
                 } else {
+                    particle.lastDeviceId = particle.originDeviceId;
                     particle.lastTime = row[4].as_datetime().as_time_point();
                 }
 

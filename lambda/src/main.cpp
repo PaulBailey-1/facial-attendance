@@ -18,7 +18,7 @@
 DBConnection db;
 
 FFMat R = FFMat::Zero();
-double speed = 1.0;
+double speed = 10.0;
 
 void computeParticleTimes(Particle particle, PathGraphPtr path) {
     fmt::println("Computing particle times for particle {}", particle.id);
