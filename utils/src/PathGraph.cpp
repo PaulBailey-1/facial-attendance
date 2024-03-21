@@ -123,6 +123,7 @@ double PathGraph::getGraphEdgeLength(int from, int to) {
 
 void PathGraph::start(int node) {
     _depths[node] = -1;
+    fmt::println("Starting path a node {}", node);
 }
 
 void PathGraph::update(int lastNode, int nextNode) {

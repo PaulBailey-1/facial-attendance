@@ -22,11 +22,12 @@ double speed = 1.0;
 
 void computeParticleTimes(Particle particle, PathGraphPtr path) {
     std::chrono::time_point startTime = db.getTime();
-    int node = particle.id;
+    int node = particle.originDeviceId;
     int nextNode = -1;
-    while(nextNode = path->getNext(node) != -1) {
+    while (nextNode = path->getNext(node) != -1) {
         double distance = PathGraph::getGraphEdgeLength(node, nextNode);
         db.addParticleTime(particle, node, startTime + std::chrono::milliseconds(int((distance / speed) * 1000)));
+        node = nextNode;
     }
 }
 
@@ -121,8 +122,6 @@ void processUpdate(UpdatePtr update) {
         PathGraphPtr path = db.getPath(match, period);
         if (match->lastUpdateDeviceId != -1) {
             path->update(match->lastUpdateDeviceId, update->deviceId);
-        } else {
-            path->start(update->deviceId);
         }
         db.updatePath(path);
 
@@ -171,6 +170,11 @@ void processUpdate(UpdatePtr update) {
         fmt::print("No match found\n");
         int stsId = db.createShortTermState(update);
         db.createParticle(stsId, update, 1.0);
+
+        ShortTermStatePtr sts = ShortTermStatePtr( new ShortTermState(stsId));
+        PathGraphPtr path = db.getPath(sts, period);
+        path->start(update->deviceId);
+        db.updatePath(path);
     }
 
     db.removeUpdate(update);

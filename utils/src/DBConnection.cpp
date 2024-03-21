@@ -619,9 +619,9 @@ PathGraphPtr DBConnection::getPath(ShortTermStatePtr sts, int period, bool silen
     try {
         if (!silent) fmt::print("Getting path for sts {} period {} ... ", sts->id, period);
         boost::mysql::results result;
-        _conn.execute(_conn.prepare_statement(
-            "SELECT path FROM paths WHERE short_term_state_key=? AND period=?"
-        ).bind(sts->id, period), result);
+        boost::mysql::statement stmt = _conn.prepare_statement( "SELECT path FROM paths WHERE short_term_state_key=? AND period=?");
+        _conn.execute(stmt.bind(sts->id, period), result);
+        _conn.close_statement(stmt);
        if (!silent) printf("Done\n");
         if (result.rows().size() > 0) {
             return PathGraphPtr(new PathGraph(sts->id, -1, period, result.rows()[0][0].as_blob()));
@@ -636,18 +636,38 @@ PathGraphPtr DBConnection::getPath(ShortTermStatePtr sts, int period, bool silen
     return nullptr;
 }
 
+PathGraphPtr DBConnection::getLtsPath(int ltsId, int period) {
+    try {
+        boost::mysql::results result;
+        boost::mysql::statement stmt = _conn.prepare_statement( "SELECT path FROM paths WHERE long_term_state_key=? AND period=?");
+        _conn.execute(stmt.bind(ltsId, period), result);
+        _conn.close_statement(stmt);
+        if (result.rows().size() > 0) {
+            return PathGraphPtr(new PathGraph(-1, ltsId, period, result.rows()[0][0].as_blob()));
+        } else {
+            return nullptr;
+        }
+    }
+    catch (const boost::mysql::error_with_diagnostics& err) {
+        std::cerr << "Error: " << err.what() << '\n'
+            << "Server diagnostics: " << err.get_diagnostics().server_message() << std::endl;
+    }
+    return nullptr;
+}
+
+
 PathGraphPtr DBConnection::getPath(LongTermStatePtr lts, int period) {
     try {
-        fmt::print("Gettting path for lts {} period {} ... ", lts->id, period);
+        fmt::print("Getting path for lts {} period {} ... ", lts->id, period);
         boost::mysql::results result;
-        _conn.execute(_conn.prepare_statement(
-            "SELECT path FROM paths WHERE long_term_state_key=? AND period=?"
-        ).bind(lts->id, period), result);
+        boost::mysql::statement stmt = _conn.prepare_statement( "SELECT path FROM paths WHERE long_term_state_key=? AND period=?");
+        _conn.execute(stmt.bind(lts->id, period), result);
+        _conn.close_statement(stmt);
         printf("Done\n");
         if (result.rows().size() > 0) {
             return PathGraphPtr(new PathGraph(-1, lts->id, period, result.rows()[0][0].as_blob()));
         } else {
-            return PathGraphPtr(new PathGraph(-1, lts->id, -period));
+            return PathGraphPtr(new PathGraph(-1, lts->id, period));
         }
     }
     catch (const boost::mysql::error_with_diagnostics& err) {

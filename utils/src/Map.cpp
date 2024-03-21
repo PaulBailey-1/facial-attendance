@@ -95,9 +95,10 @@ void Map::getDeviceConnections(std::vector<std::set<int>>& conns, Eigen::MatrixX
         createPathMap(pathMap, dev.pos, connectedDevs, dev.id);
         conns.push_back(connectedDevs);
         createPathMap(pathMap, dev.pos);
-        for (auto j = connectedDevs.begin(); j != connectedDevs.end(); j++) {
-            glm::ivec2 ipos = { round(devs[*j].pos.x), round(devs[*j].pos.y) };
-            distances(i, *j) = pathMap[ipos.x][ipos.y];
+        // for (auto j = connectedDevs.begin(); j != connectedDevs.end(); j++) {
+        for (int j = 0; j < devs.size(); j++) {
+            glm::ivec2 ipos = { round(devs[j].pos.x), round(devs[j].pos.y) };
+            distances(i, j) = pathMap[ipos.x][ipos.y];
         }
 	}
 }

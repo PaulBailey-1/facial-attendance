@@ -57,8 +57,9 @@ public:
     void updateShortTermState(ShortTermStatePtr state);
     void clearShortTermStates();
 
-    PathGraphPtr getPath(ShortTermStatePtr sts, int period, bool silent = false);
-    PathGraphPtr getPath(LongTermStatePtr lts, int period);
+    PathGraphPtr getPath(ShortTermStatePtr stsId, int period, bool silent = false);
+    PathGraphPtr getPath(LongTermStatePtr ltsId, int period);
+    PathGraphPtr getLtsPath(int ltsId, int period);
     void getPaths(ShortTermStatePtr sts, std::vector<PathGraphPtr>& paths);
     void updatePath(PathGraphPtr path);
     void copyPaths(ShortTermStatePtr sts, LongTermStatePtr lts);

@@ -42,8 +42,8 @@ void Display::update() {
 		_db.getShortTermStates(_shortTermStates, true);
 		_particles.clear();
 		_db.getParticles(_particles);
-		if (_shortTermStates.size() > 0) {
-			_pathGraph = _db.getPath(_shortTermStates[0], _db.getPeriod(), true);
+		if (_shortTermStates.size() > 0 && _shortTermStates[0]->longTermStateKey != -1) {
+			_pathGraph = _db.getLtsPath(_shortTermStates[0]->longTermStateKey, _db.getPeriod());
 		}
 	}
 	limiter++;

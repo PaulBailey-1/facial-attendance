@@ -167,6 +167,8 @@ public:
 		longTermStateKey = -1;
 		updateCount = updateCount_;
 	}
+
+	ShortTermState(int id_) : EntityState(id_) {}
 };
 
 typedef std::shared_ptr<EntityState> EntityStatePtr;
