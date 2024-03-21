@@ -25,6 +25,41 @@ void VisualizerApp::setup() {
 	_db.connect();
 
 #ifdef FACES
+	// projectionInit();
+	_descentDone = true;
+#endif
+
+#ifdef PATH
+	loadLtsPath(0, 2);
+#endif
+
+}
+
+void VisualizerApp::update() {
+
+#ifdef FACES
+
+	if (!_descentDone) {
+		projectionGradientDescent();
+	}
+
+#endif
+
+}
+
+void VisualizerApp::projectionInit() {
+
+	_stepSize = 0.01;
+	_nDim = 0;
+	_maxDistance = 0.0;
+	_zoom = 3.0;
+	_time =  0;
+	_descentDone = false;
+
+	_pastCosts = std::queue<double>();
+	_avgCostSum = 0.0;
+
+	_faces.clear();
 
 	loadEntities();
 	loadShortTermState();
@@ -51,26 +86,11 @@ void VisualizerApp::setup() {
 	_state = _state * _maxDistance / 2.0;
 	_stateGradient = Eigen::MatrixXd(_nDim, 3);
 
+	_log.close();
 	_log.open("log.csv");
 	_log << "timestep, cost, step, gradient\n";
 
 	CI_LOG_D("Beginning optimization ...");
-
-#endif
-
-#ifdef PATH
-	loadLtsPath(0, 2);
-#endif
-
-}
-
-void VisualizerApp::update() {
-
-#ifdef FACES
-	if (!_descentDone) {
-		projectionGradientDescent();
-	}
-#endif
 
 }
 
@@ -202,6 +222,12 @@ void VisualizerApp::mouseDown(ci::app::MouseEvent event) {
 
 void VisualizerApp::mouseDrag(ci::app::MouseEvent event) {
 	_camUi.mouseDrag(event);
+}
+
+void VisualizerApp::keyDown(ci::app::KeyEvent event) {
+	if (event.getCode() == ci::app::KeyEvent::KEY_SPACE) {
+		projectionInit();
+	}
 }
 
 void VisualizerApp::cleanup() {
